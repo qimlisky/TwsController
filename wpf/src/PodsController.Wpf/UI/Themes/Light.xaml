@@ -22,4 +22,7 @@
     <SolidColorBrush x:Key="ShadowBrush" Color="#40000000" />
     <Color x:Key="ShadowColor">#40000000</Color>
     <SolidColorBrush x:Key="MenuBrush" Color="#FAF9F9F9" />
+    <SolidColorBrush x:Key="MenuStrokeBrush" Color="#22000000" />
+    <SolidColorBrush x:Key="MenuHoverBrush" Color="#12000000" />
+    <SolidColorBrush x:Key="MenuSeparatorBrush" Color="#14000000" />
 </ResourceDictionary>

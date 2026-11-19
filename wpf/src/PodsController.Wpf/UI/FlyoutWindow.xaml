@@ -57,31 +57,27 @@
 
                     <Button x:Name="FoldButton" Grid.Column="2" Style="{StaticResource IconButtonStyle}"
                             Margin="0,0,2,0" Click="FoldButton_Click" ToolTip="折叠 / 展开">
-                        <Path x:Name="FoldIcon" Width="18" Height="18" Stretch="Uniform"
-                              Data="M6 14.5l6-6 6 6" Stroke="{DynamicResource TextBrush}"
-                              StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              StrokeLineJoin="Round" />
+                        <TextBlock x:Name="FoldIcon" Text="&#xE70E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                   FontSize="14" Foreground="{DynamicResource TextBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
                     <Button x:Name="PinButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}"
                             Margin="0,0,2,0" Click="PinButton_Click" ToolTip="固定浮窗">
-                        <Path x:Name="PinIcon" Width="18" Height="18" Stretch="Uniform"
-                              Data="M14 2v6l3 3v2h-4v7l-1 1-1-1v-7H7v-2l3-3V2z"
-                              Stroke="{DynamicResource TextBrush}" StrokeThickness="1.7"
-                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                        <TextBlock x:Name="PinIcon" Text="&#xE840;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                   FontSize="14" Foreground="{DynamicResource TextBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
                     <Button x:Name="SettingsButton" Grid.Column="4" Style="{StaticResource IconButtonStyle}"
                             Margin="0,0,2,0" Click="SettingsButton_Click" ToolTip="设置">
-                        <Path Width="18" Height="18" Stretch="Uniform"
-                              Data="M12 9.5A2.5 2.5 0 1 0 12 14.5 2.5 2.5 0 0 0 12 9.5z"
-                              Stroke="{DynamicResource TextBrush}" StrokeThickness="1.7"
-                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                        <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                   FontSize="14" Foreground="{DynamicResource TextBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
                     <Button x:Name="CloseButton" Grid.Column="5" Style="{StaticResource IconButtonStyle}"
                             Click="CloseButton_Click" ToolTip="关闭">
-                        <Path Width="18" Height="18" Stretch="Uniform"
-                              Data="M7 7l10 10M17 7L7 17" Stroke="{DynamicResource TextBrush}"
-                              StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              StrokeLineJoin="Round" />
+                        <TextBlock Text="&#xE8BB;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                   FontSize="13" Foreground="{DynamicResource TextBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
                 </Grid>
 

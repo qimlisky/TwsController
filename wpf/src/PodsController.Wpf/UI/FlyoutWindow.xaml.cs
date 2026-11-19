@@ -32,6 +32,9 @@ public partial class FlyoutWindow : Window
     private const int CollapseMs = 200;
     private const int ToastMs = 2600;
 
+    // 设备图片只解码一次，之后复用同一张已 Freeze 的位图，避免每次刷新都读盘 / 重新解码。
+    private static readonly Dictionary<string, BitmapImage?> ImageCache = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly DeviceHub _hub;
     private readonly SettingsStore _settings;
 
@@ -60,6 +63,7 @@ public partial class FlyoutWindow : Window
     private MenuItem? _miDevices;
     private MenuItem? _miCloseTray;
     private MenuItem? _miCloseExit;
+    private MenuItem? _miFollowCC;
 
     public FlyoutWindow(DeviceHub hub, SettingsStore settings)
     {
@@ -303,7 +307,7 @@ public partial class FlyoutWindow : Window
 
         ApplyPillMetrics(collapsed);
 
-        FoldIcon.Data = Geometry.Parse(collapsed ? "M6 9.5l6 6 6-6" : "M6 14.5l6-6 6 6");
+        FoldIcon.Text = collapsed ? "\uE70D" : "\uE70E";
 
         var target = collapsed ? MeasureCollapsedHeight() : PanelHeight;
         var work = WorkArea();
@@ -395,9 +399,8 @@ public partial class FlyoutWindow : Window
     {
         PinButton.Opacity = _pinned ? 1.0 : 0.55;
         PinButton.ToolTip = _pinned ? "取消固定" : "固定浮窗";
-        PinIcon.Data = Geometry.Parse(_pinned
-            ? "M14 2v6l3 3v2h-4v7l-1 1-1-1v-7H7v-2l3-3V2z"
-            : "M14 2v6l3 3v2h-4v7l-1 1-1-1v-7");
+        PinIcon.SetResourceReference(TextBlock.ForegroundProperty,
+            _pinned ? "AccentBrush" : "TextBrush");
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -515,23 +518,31 @@ public partial class FlyoutWindow : Window
 
     private static BitmapImage? LoadImage(string fileName)
     {
+        if (ImageCache.TryGetValue(fileName, out var cached)) return cached;
+
+        BitmapImage? bitmap = null;
         try
         {
             var path = Path.Combine(AppPaths.AssetsDir, fileName);
-            if (!File.Exists(path)) return null;
-
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.UriSource = new Uri(path);
-            bitmap.EndInit();
-            bitmap.Freeze();
-            return bitmap;
+            if (File.Exists(path))
+            {
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                image.UriSource = new Uri(path);
+                image.EndInit();
+                image.Freeze();
+                bitmap = image;
+            }
         }
         catch
         {
-            return null;
+            bitmap = null;
         }
+
+        ImageCache[fileName] = bitmap;
+        return bitmap;
     }
 
     private void Refresh()
@@ -754,7 +765,7 @@ public partial class FlyoutWindow : Window
     private void ConnectButton_Click(object sender, RoutedEventArgs e)
     {
         var menu = new ContextMenu();
-        FillDeviceMenu(menu);
+        FillDeviceMenu(menu.Items);
         menu.PlacementTarget = ConnectButton;
         menu.Placement = PlacementMode.Bottom;
         menu.IsOpen = true;
@@ -823,6 +834,15 @@ public partial class FlyoutWindow : Window
         };
         _miDark.Click += (_, _) => DarkThemeToggled?.Invoke(_miDark.IsChecked);
 
+        _miFollowCC = new MenuItem
+        {
+            Header = "跟随系统控制中心（Win+A）",
+            IsCheckable = true,
+            IsChecked = _settings.GetBool("follow_control_center", false),
+            StaysOpenOnClick = true
+        };
+        _miFollowCC.Click += (_, _) => FollowControlCenterToggled?.Invoke(_miFollowCC.IsChecked);
+
         _miCloseTray = new MenuItem
         {
             Header = "最小化到托盘（后台常驻）",
@@ -877,6 +897,7 @@ public partial class FlyoutWindow : Window
         menu.Items.Add(_miAutoShow);
         menu.Items.Add(new Separator());
         menu.Items.Add(_miDark);
+        menu.Items.Add(_miFollowCC);
         menu.Items.Add(closeMenu);
         menu.Items.Add(_miAutoHide);
         menu.Items.Add(new Separator());
@@ -888,7 +909,7 @@ public partial class FlyoutWindow : Window
         {
             _menuOpen = true;
             SyncMenuChecks();
-            if (_miDevices is not null) FillDeviceMenu(_miDevices);
+            if (_miDevices is not null) FillDeviceMenu(_miDevices.Items);
         };
         menu.Closed += (_, _) => _menuOpen = false;
 
@@ -909,16 +930,17 @@ public partial class FlyoutWindow : Window
         if (_miAutoShow is not null) _miAutoShow.IsChecked = _settings.GetBool("auto_show", true);
         if (_miAutoHide is not null) _miAutoHide.IsChecked = _settings.GetBool("auto_hide", true);
         if (_miDark is not null) _miDark.IsChecked = _settings.GetBool("dark", true);
+        if (_miFollowCC is not null) _miFollowCC.IsChecked = _settings.GetBool("follow_control_center", false);
         SyncCloseActionState();
     }
 
-    private void FillDeviceMenu(MenuItem parent)
+    private void FillDeviceMenu(ItemCollection parent)
     {
-        parent.Items.Clear();
+        parent.Clear();
         var devices = DeviceProvider?.Invoke() ?? new List<DeviceInfo>();
         if (devices.Count == 0)
         {
-            parent.Items.Add(new MenuItem { Header = "（没有找到已配对的支持型号）", IsEnabled = false });
+            parent.Add(new MenuItem { Header = "（没有找到已配对的支持型号）", IsEnabled = false });
             return;
         }
 
@@ -926,7 +948,7 @@ public partial class FlyoutWindow : Window
         {
             var item = new MenuItem { Header = $"{device.Name}  {device.PrettyMac}" };
             item.Click += (_, _) => DeviceSelected?.Invoke(device);
-            parent.Items.Add(item);
+            parent.Add(item);
         }
     }
 

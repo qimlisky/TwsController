@@ -414,6 +414,8 @@ public sealed class AppHost
 
         try
         {
+            _settings.Flush();
+            AppLog.Flush();
             AppPaths.EnsureLocalDir();
             File.WriteAllText(AppPaths.CleanExitFlag, DateTime.Now.ToString("O"));
         }

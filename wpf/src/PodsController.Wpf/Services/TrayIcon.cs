@@ -1,4 +1,7 @@
 using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 using PodsController.Core;
 using PodsController.Interop;
@@ -45,6 +48,7 @@ public sealed class TrayIcon : IDisposable
     private bool _added;
     private string _iconFile = "";
     private string _tooltip = AppMeta.AppName;
+    private ContextMenu? _openMenu;
 
     public TrayIcon(MessageWindow window)
     {
@@ -72,7 +76,12 @@ public sealed class TrayIcon : IDisposable
         if (_window.Handle == IntPtr.Zero) return false;
 
         if (_iconFile.Length == 0) _iconFile = AppPaths.IconPath;
+        var previous = _icon;
         _icon = LoadIcon(_iconFile);
+        if (previous != IntPtr.Zero && previous != _icon)
+        {
+            try { Native.DestroyIcon(previous); } catch { /* 忽略 */ }
+        }
         var data = BuildData();
         data.uFlags = Native.NIF_MESSAGE | Native.NIF_ICON | Native.NIF_TIP;
         _added = Native.Shell_NotifyIcon(Native.NIM_ADD, ref data);
@@ -124,41 +133,78 @@ public sealed class TrayIcon : IDisposable
         try
         {
             var state = StateProvider?.Invoke() ?? new TrayMenuState();
-
-            var menu = Native.CreatePopupMenu();
-            if (menu == IntPtr.Zero) return;
-
-            Append(menu, CmdShow, state.DeviceName.Length > 0 ? $"显示面板（{state.DeviceName}）" : "显示面板");
-            Append(menu, CmdAutoDetect, "自动识别已连接的耳机", state.AutoDetect);
-            Native.AppendMenu(menu, Native.MF_SEPARATOR, 0, "");
-
-            Append(menu, CmdDemoVivo, "演示模式：vivo TWS");
-            Append(menu, CmdDemoHuawei, "演示模式：华为 FreeBuds Pro 5");
-            Append(menu, CmdDemoOppo, "演示模式：OPPO Enco X4");
-            Native.AppendMenu(menu, Native.MF_SEPARATOR, 0, "");
-
-            Append(menu, CmdDark, "深色模式", state.DarkTheme);
-            Append(menu, CmdStartup, "开机自启动", state.Startup);
-            Append(menu, CmdFollowWinA, "跟随 Win+A", state.FollowWinA);
-            Append(menu, CmdFollowControlCenter, "跟随系统控制中心", state.FollowControlCenter);
-            Append(menu, CmdCloseHide, "关闭按钮：最小化到托盘（后台常驻）", state.CloseAction != "exit");
-            Append(menu, CmdCloseQuit, "关闭按钮：直接退出程序", state.CloseAction == "exit");
-            Native.AppendMenu(menu, Native.MF_SEPARATOR, 0, "");
-            Append(menu, CmdQuit, "退出");
-
-            Native.SetForegroundWindow(_window.Handle);
-
-            Native.GetCursorPos(out var point);
-            var command = Native.TrackPopupMenu(menu, Native.TPM_RIGHTBUTTON | Native.TPM_RETURNCMD,
-                point.X, point.Y, 0, _window.Handle, IntPtr.Zero);
-            Native.DestroyMenu(menu);
-
-            Dispatch((int)command, state);
+            var app = Application.Current;
+            if (app is null) return;
+            app.Dispatcher.BeginInvoke(new Action(() => OpenMenu(state)));
         }
         catch (Exception ex)
         {
             AppLog.Runtime($"托盘菜单失败：{ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// 托盘右键菜单改用 WPF ContextMenu（复用 App.xaml 里的圆角菜单样式），
+    /// 不再使用 Win32 原生菜单，避免复古灰底。
+    /// </summary>
+    private void OpenMenu(TrayMenuState state)
+    {
+        try { _openMenu?.SetCurrentValue(ContextMenu.IsOpenProperty, false); } catch { /* 忽略 */ }
+
+        var menu = new ContextMenu();
+
+        menu.Items.Add(TrayItem(
+            state.DeviceName.Length > 0 ? $"显示面板（{state.DeviceName}）" : "显示面板",
+            () => ShowRequested?.Invoke()));
+
+        menu.Items.Add(TrayItem("自动识别已连接的耳机",
+            () => AutoDetectToggled?.Invoke(!state.AutoDetect), state.AutoDetect));
+        menu.Items.Add(new Separator());
+
+        var demo = new MenuItem { Header = "演示模式" };
+        demo.Items.Add(TrayItem("vivo TWS", () => DemoRequested?.Invoke(Vendor.Vivo)));
+        demo.Items.Add(TrayItem("华为 FreeBuds Pro 5", () => DemoRequested?.Invoke(Vendor.Huawei)));
+        demo.Items.Add(TrayItem("OPPO Enco X4", () => DemoRequested?.Invoke(Vendor.Oppo)));
+        menu.Items.Add(demo);
+        menu.Items.Add(new Separator());
+
+        menu.Items.Add(TrayItem("深色模式", () => DarkThemeToggled?.Invoke(), state.DarkTheme));
+        menu.Items.Add(TrayItem("开机自启动", () => StartupToggled?.Invoke(!state.Startup), state.Startup));
+        menu.Items.Add(TrayItem("跟随 Win+A", () => FollowWinAToggled?.Invoke(!state.FollowWinA), state.FollowWinA));
+        menu.Items.Add(TrayItem("跟随系统控制中心",
+            () => FollowControlCenterToggled?.Invoke(!state.FollowControlCenter), state.FollowControlCenter));
+
+        var closeMenu = new MenuItem { Header = "关闭按钮行为" };
+        closeMenu.Items.Add(TrayItem("最小化到托盘（后台常驻）",
+            () => CloseActionToggled?.Invoke(true), state.CloseAction != "exit"));
+        closeMenu.Items.Add(TrayItem("直接退出程序",
+            () => CloseActionToggled?.Invoke(false), state.CloseAction == "exit"));
+        menu.Items.Add(closeMenu);
+        menu.Items.Add(new Separator());
+
+        menu.Items.Add(TrayItem("退出", () => QuitRequested?.Invoke()));
+
+        try { Native.SetForegroundWindow(_window.Handle); } catch { /* 忽略 */ }
+        _openMenu = menu;
+        menu.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(_openMenu, menu)) _openMenu = null;
+        };
+        menu.Placement = PlacementMode.MousePoint;
+        menu.IsOpen = true;
+    }
+
+    private static MenuItem TrayItem(string header, Action action, bool? check = null)
+    {
+        var item = new MenuItem { Header = header };
+        if (check is not null)
+        {
+            item.IsCheckable = true;
+            item.IsChecked = check.Value;
+            item.StaysOpenOnClick = true;
+        }
+        item.Click += (_, _) => action();
+        return item;
     }
 
     private static void Append(IntPtr menu, int id, string text, bool? check = null)
