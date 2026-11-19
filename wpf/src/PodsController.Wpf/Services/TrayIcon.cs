@@ -4,6 +4,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 
+using Microsoft.Win32;
+
 using PodsController.Core;
 using PodsController.Interop;
 
@@ -101,7 +103,79 @@ public sealed class TrayIcon : IDisposable
         {
             AppLog.Runtime($"托盘图标添加失败（可能被系统隐藏）code={Marshal.GetLastWin32Error()}");
         }
+        else
+        {
+            SchedulePromote();
+        }
         return _added;
+    }
+
+    /// <summary>
+    /// Win11 新托盘图标默认进「隐藏的图标」溢出区，应用没有官方 API 强制常显。
+    /// 这里做 best-effort：等 Explorer 建好 NotifyIconSettings 项后，把本 exe 对应项的
+    /// IsPromoted 置 1（等同于用户在「其他系统托盘图标」里打开开关）。
+    /// 找不到项或系统策略禁止时不强行创建，避免写坏用户的任务栏设置。
+    /// </summary>
+    private void SchedulePromote()
+    {
+        Task.Run(async () =>
+        {
+            foreach (var delay in new[] { 1200, 5000 })
+            {
+                await Task.Delay(delay).ConfigureAwait(false);
+                try
+                {
+                    var changed = TryPromote();
+                    if (changed > 0)
+                    {
+                        AppLog.Taskbar($"已请求托盘图标常显（匹配 {changed} 项）");
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Taskbar($"托盘常显设置失败：{ex.Message}");
+                    return;
+                }
+            }
+
+            AppLog.Taskbar("未找到托盘常显项，Win11 需在「其他系统托盘图标」里手动打开");
+        });
+    }
+
+    private static int TryPromote()
+    {
+        var exe = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(exe)) return 0;
+        exe = Path.GetFullPath(exe);
+
+        using var root = Registry.CurrentUser.OpenSubKey(@"Control Panel\NotifyIconSettings");
+        if (root is null) return 0;
+
+        var changed = 0;
+        foreach (var name in root.GetSubKeyNames())
+        {
+            try
+            {
+                using var key = root.OpenSubKey(name, writable: true);
+                if (key is null) continue;
+                if (key.GetValue("ExecutablePath") is not string path) continue;
+                path = path.Trim().Trim('"');
+                if (path.Length == 0) continue;
+                if (!string.Equals(Path.GetFullPath(path), exe, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var current = key.GetValue("IsPromoted") as int? ?? 0;
+                if (current == 1) return Math.Max(changed, 1);
+                key.SetValue("IsPromoted", 1, RegistryValueKind.DWord);
+                changed++;
+            }
+            catch
+            {
+                // 单个项不可写就跳过，不影响其它项
+            }
+        }
+
+        return changed;
     }
 
     public void Remove()
