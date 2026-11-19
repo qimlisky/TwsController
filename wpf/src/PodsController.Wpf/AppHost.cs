@@ -447,13 +447,15 @@ public sealed class AppHost
         {
             var state = _hub?.State;
             var info = _hub?.Info;
-            var name = info is null
-                ? AppMeta.AppName
-                : DeviceCatalog.DisplayName(info.Name, info.Vendor) + (info.IsDemo ? "（演示）" : "");
+            var connected = state?.Connected == true;
+            // 托盘提示只认「当前真的连上」的设备；断开后不要继续显示上次连接的设备名。
+            var name = connected && info is not null
+                ? DeviceCatalog.DisplayName(info.Name, info.Vendor) + (info.IsDemo ? "（演示）" : "")
+                : AppMeta.AppName;
 
-            var text = state is null || !state.Connected
-                ? name
-                : $"{name}\n左 {Percent(state.LeftPercent)} · 右 {Percent(state.RightPercent)} · 盒 {Percent(state.CasePercent)}";
+            var text = !connected
+                ? AppMeta.AppName
+                : $"{name}\n左 {Percent(state!.LeftPercent)} · 右 {Percent(state.RightPercent)} · 盒 {Percent(state.CasePercent)}";
             _tray?.SetTooltip(text);
         }
         catch
