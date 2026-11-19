@@ -24,7 +24,6 @@ permissions:
 jobs:
   prepare:
     name: Validate and bump version
-    if: ${{ github.ref_type == 'tag' || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
 
     outputs:
@@ -34,7 +33,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -134,12 +133,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.prepare.outputs.sha }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "10.0.x"
 
@@ -161,7 +160,7 @@ jobs:
           Compress-Archive -Path "$out/*" -DestinationPath $zip -Force
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: TwsController-windows-${{ matrix.arch }}
           path: dist/TwsController-windows-${{ matrix.arch }}.zip
@@ -174,7 +173,7 @@ jobs:
 
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: TwsController-windows-*
           path: release
@@ -187,7 +186,7 @@ jobs:
           sha256sum *.zip > SHA256SUMS.txt
 
       - name: Create release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           target_commitish: ${{ needs.prepare.outputs.sha }}
