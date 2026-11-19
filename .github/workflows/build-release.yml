@@ -95,23 +95,7 @@ jobs:
               fi
             fi
 
-            python3 - "$FILE" "$VERSION" <<'PY'
-            import re
-            import sys
-            from pathlib import Path
-
-            path, version = sys.argv[1], sys.argv[2]
-            text = Path(path).read_text(encoding="utf-8")
-            new_text, count = re.subn(
-                r'(public const string AppVersion\s*=\s*")[^"]*(")',
-                rf'\g<1>{version}\g<2>',
-                text,
-                count=1,
-            )
-            if count != 1:
-                raise SystemExit("AppVersion declaration not found")
-            Path(path).write_text(new_text, encoding="utf-8")
-            PY
+            sed -i "s/public const string AppVersion = \"[^\"]*\"/public const string AppVersion = \"$VERSION\"/" "$FILE"
 
             CODE_AFTER=$(sed -n 's/.*public const string AppVersion = "\([^"]*\)".*/\1/p' "$FILE" | head -n 1)
             if [[ "$CODE_AFTER" != "$VERSION" ]]; then
