@@ -18,6 +18,7 @@ public sealed class AutoConnectManager
     private bool _autoShow = true;
 
     private readonly HashSet<string> _takenOver = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _missingPolls = new(StringComparer.OrdinalIgnoreCase);
     private string _lastSignature = "";
 
     public AutoConnectManager(DeviceHub hub, SettingsStore settings)
@@ -65,6 +66,7 @@ public sealed class AutoConnectManager
         _enabled = enabled;
         _settings.Set("auto_detect", enabled);
         if (!enabled) _takenOver.Clear();
+        if (!enabled) _missingPolls.Clear();
         SnapshotChanged?.Invoke(new List<DeviceInfo>());
     }
 
@@ -74,6 +76,7 @@ public sealed class AutoConnectManager
         lock (_takenOver)
         {
             _takenOver.Clear();
+            _missingPolls.Clear();
             _lastSignature = "";
         }
         SnapshotChanged?.Invoke(new List<DeviceInfo>());
@@ -121,9 +124,25 @@ public sealed class AutoConnectManager
 
             lock (_takenOver)
             {
-                // 断开过的设备要放回可接管集合
+                // 断开过的设备要放回可接管集合；连续两次没看到才认为真的断开，
+                // 避免 RFCOMM 控制通道建立时蓝牙枚举短暂掉线导致反复重连。
                 var stillConnected = devices.Select(d => d.PlainMac).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                _takenOver.RemoveWhere(mac => !stillConnected.Contains(mac));
+                foreach (var mac in _takenOver.ToList())
+                {
+                    if (stillConnected.Contains(mac))
+                    {
+                        _missingPolls.Remove(mac);
+                        continue;
+                    }
+
+                    var missing = _missingPolls.TryGetValue(mac, out var count) ? count + 1 : 1;
+                    _missingPolls[mac] = missing;
+                    if (missing >= 2)
+                    {
+                        _takenOver.Remove(mac);
+                        _missingPolls.Remove(mac);
+                    }
+                }
 
                 if (!_enabled) return;
 

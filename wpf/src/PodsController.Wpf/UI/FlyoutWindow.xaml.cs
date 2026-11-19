@@ -48,6 +48,7 @@ public partial class FlyoutWindow : Window
     private bool _collapsed;
     private bool _adaptivePending;
     private bool _autoShown;
+    private bool _autoHideArmed;
     private bool _menuOpen;
     private bool _allowClose;
     private bool _animating;
@@ -130,6 +131,7 @@ public partial class FlyoutWindow : Window
         BeginAnimation(OpacityProperty, null);
 
         _autoShown = string.Equals(source, "auto", StringComparison.OrdinalIgnoreCase);
+        _autoHideArmed = false;
         _shownAt = DateTime.UtcNow;
 
         if (IsVisible)
@@ -142,7 +144,8 @@ public partial class FlyoutWindow : Window
                 EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
             });
             Activate();
-            ResetAutoHide();
+            if (_autoShown && _hub.State?.Connected != true) StopAutoHide();
+            else ResetAutoHide();
             return;
         }
 
@@ -168,7 +171,8 @@ public partial class FlyoutWindow : Window
             EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
         });
 
-        if (_autoShown && _settings.GetBool("auto_hide", true) && !_pinned) StartAutoHide();
+        if (_autoShown && _settings.GetBool("auto_hide", true) && !_pinned
+            && _hub.State?.Connected == true) StartAutoHide();
         else StopAutoHide();
 
         Refresh();
@@ -176,6 +180,7 @@ public partial class FlyoutWindow : Window
 
     public void HideFlyout(string reason = "manual")
     {
+        _autoHideArmed = false;
         StopAutoHide();
         if (!IsVisible) return;
 
@@ -592,6 +597,8 @@ public partial class FlyoutWindow : Window
             var info = _hub.Info;
             var connected = state?.Connected == true;
             var features = state?.Features ?? FeatureSet.Empty;
+            var deviceStatus = state?.Status ?? "";
+            var waitingForConnection = info is not null && !connected;
 
             DeviceNameText.Text = info is null
                 ? AppMeta.AppName
@@ -601,12 +608,28 @@ public partial class FlyoutWindow : Window
             WearText.Text = wear;
             WearText.Visibility = string.IsNullOrEmpty(wear) ? Visibility.Collapsed : Visibility.Visible;
             StatusText.Text = connected
-                ? (string.IsNullOrWhiteSpace(state!.Status) ? "已连接" : state.Status)
-                : (string.IsNullOrEmpty(_detectHint) ? "未连接" : _detectHint);
+                ? (string.IsNullOrWhiteSpace(deviceStatus) ? "已连接" : deviceStatus)
+                : waitingForConnection
+                    ? (string.IsNullOrWhiteSpace(deviceStatus) ? "正在连接…" : deviceStatus)
+                    : (string.IsNullOrEmpty(_detectHint) ? "未连接" : _detectHint);
+
+            EmptyTitle.Text = waitingForConnection
+                ? (string.IsNullOrWhiteSpace(deviceStatus) ? "正在连接…" : deviceStatus)
+                : "未连接到耳机";
+            ConnectButton.Visibility = waitingForConnection && deviceStatus.Contains("连接中", StringComparison.Ordinal)
+                ? Visibility.Collapsed
+                : Visibility.Visible;
 
             EmptySection.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
             ContentScroll.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
             FoldButton.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
+
+            // 自动弹出的窗口，等真正连上后再重新给满 5 秒，避免连接成功瞬间就收起。
+            if (connected && _autoShown && !_pinned && !_autoHideArmed)
+            {
+                _autoHideArmed = true;
+                ResetAutoHide();
+            }
 
             // 电量
             var left = state?.LeftPercent ?? -1;

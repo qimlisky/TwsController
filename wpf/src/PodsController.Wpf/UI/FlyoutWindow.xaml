@@ -340,7 +340,7 @@
                         <StackPanel HorizontalAlignment="Center">
                             <Image x:Name="DisconnectPhoto" Width="52" Height="52" Stretch="Uniform"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
-                            <TextBlock Text="未连接到耳机" FontSize="11" FontWeight="DemiBold"
+                            <TextBlock x:Name="EmptyTitle" Text="未连接到耳机" FontSize="11" FontWeight="DemiBold"
                                        Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center"
                                        Margin="0,8,0,0" />
                             <Button x:Name="ConnectButton" Content="选择耳机（vivo / 华为 / OPPO / Redmi）"
