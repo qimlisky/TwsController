@@ -377,12 +377,6 @@ internal static class Native
         public int X, Y;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct Rect
-    {
-        public int Left, Top, Right, Bottom;
-    }
-
     [DllImport("user32.dll")]
     public static extern bool GetWindowRect(IntPtr hWnd, out Rect rect);
 
