@@ -117,6 +117,7 @@ internal static class Native
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct WndClassEx
     {
+        public uint cbSize;
         public uint Style;
         public IntPtr WndProc;
         public int cbClsExtra;

@@ -56,6 +56,7 @@ public sealed class MessageWindow : IDisposable
             var hInstance = Native.GetModuleHandle(null);
             var wndClass = new Native.WndClassEx
             {
+                cbSize = (uint)Marshal.SizeOf<Native.WndClassEx>(),
                 Style = 0,
                 WndProc = Marshal.GetFunctionPointerForDelegate(_wndProc),
                 cbClsExtra = 0,
