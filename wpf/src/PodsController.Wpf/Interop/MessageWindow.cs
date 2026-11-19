@@ -13,7 +13,7 @@ namespace PodsController.Interop;
 /// </summary>
 public sealed class MessageWindow : IDisposable
 {
-    private const string ClassName = "VivoPodsWinUI.HiddenWindow";
+    private static readonly string ClassName = $"VivoPodsWinUI.HiddenWindow.{Environment.ProcessId}";
     private const int TrayIconId = 1;
     private static readonly uint TaskbarCreatedMessage = Native.RegisterWindowMessage("TaskbarCreated");
 
@@ -53,13 +53,14 @@ public sealed class MessageWindow : IDisposable
         try
         {
             _wndProc = WndProc;
+            var hInstance = Native.GetModuleHandle(null);
             var wndClass = new Native.WndClassEx
             {
                 Style = 0,
                 WndProc = Marshal.GetFunctionPointerForDelegate(_wndProc),
                 cbClsExtra = 0,
                 cbWndExtra = 0,
-                hInstance = IntPtr.Zero,
+                hInstance = hInstance,
                 hIcon = IntPtr.Zero,
                 hCursor = IntPtr.Zero,
                 hbrBackground = IntPtr.Zero,
@@ -68,11 +69,21 @@ public sealed class MessageWindow : IDisposable
                 hIconSm = IntPtr.Zero
             };
 
-            Native.RegisterClassEx(ref wndClass);
-            Handle = Native.CreateWindowEx(0, ClassName, "VivoPodsWinUI", Native.WS_POPUP,
-                0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            var atom = Native.RegisterClassEx(ref wndClass);
+            if (atom == 0)
+            {
+                AppLog.Runtime($"消息窗口注册失败 code={Marshal.GetLastWin32Error()}");
+                return;
+            }
 
-            if (Handle == IntPtr.Zero) return;
+            Handle = Native.CreateWindowEx(0, ClassName, "VivoPodsWinUI", Native.WS_POPUP,
+                0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
+
+            if (Handle == IntPtr.Zero)
+            {
+                AppLog.Runtime($"消息窗口创建失败 code={Marshal.GetLastWin32Error()}");
+                return;
+            }
 
             Native.WTSRegisterSessionNotification(Handle, Native.NOTIFY_FOR_THIS_SESSION);
         }

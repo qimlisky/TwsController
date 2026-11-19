@@ -240,6 +240,9 @@ internal static class Native
     public static extern IntPtr CreateWindowEx(int exStyle, string className, string windowName,
         uint style, int x, int y, int width, int height, IntPtr parent, IntPtr menu, IntPtr instance, IntPtr param);
 
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    public static extern IntPtr GetModuleHandle(string? lpModuleName);
+
     [DllImport("user32.dll")]
     public static extern bool DestroyWindow(IntPtr hWnd);
 
@@ -294,7 +297,7 @@ internal static class Native
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern IntPtr LoadImage(IntPtr instance, string name, uint type, int cx, int cy, uint load);
 
     [DllImport("user32.dll")]
@@ -388,7 +391,7 @@ internal static class Native
     // ------------------------------------------------------------------ //
     // shell32
     // ------------------------------------------------------------------ //
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern bool Shell_NotifyIcon(uint message, ref NotifyIconData data);
 
     // ------------------------------------------------------------------ //

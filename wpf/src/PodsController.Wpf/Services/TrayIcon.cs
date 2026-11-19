@@ -76,7 +76,11 @@ public sealed class TrayIcon : IDisposable
     // ------------------------------------------------------------------ //
     public bool Add()
     {
-        if (_window.Handle == IntPtr.Zero) return false;
+        if (_window.Handle == IntPtr.Zero)
+        {
+            AppLog.Runtime("托盘图标添加失败：消息窗口句柄为空");
+            return false;
+        }
 
         if (_iconFile.Length == 0) _iconFile = AppPaths.IconPath;
         var previous = _icon;
