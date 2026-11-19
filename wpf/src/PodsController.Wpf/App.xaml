@@ -345,15 +345,18 @@
             </Style>
 
             <!-- ============================================================ -->
-            <!-- 滚动条：Qt 版宽 0（隐藏），WPF 保留 4px 细条，避免无法滚动    -->
+            <!-- 滚动条：透明轨道 + 6px 圆角悬浮滑块，贴合 Win11 浮窗风格      -->
             <!-- ============================================================ -->
             <Style x:Key="ThinScrollBarStyle" TargetType="ScrollBar">
-                <Setter Property="Width" Value="4" />
+                <Setter Property="Width" Value="6" />
+                <Setter Property="MinWidth" Value="6" />
                 <Setter Property="Background" Value="Transparent" />
+                <Setter Property="SnapsToDevicePixels" Value="True" />
+                <Setter Property="UseLayoutRounding" Value="True" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ScrollBar">
-                            <Grid Background="Transparent">
+                            <Grid Background="Transparent" Margin="0,2,0,2">
                                 <Track x:Name="PART_Track" IsDirectionReversed="True"
                                        Orientation="{TemplateBinding Orientation}"
                                        Minimum="{TemplateBinding Minimum}"
@@ -361,10 +364,22 @@
                                        Value="{TemplateBinding Value}"
                                        ViewportSize="{TemplateBinding ViewportSize}">
                                     <Track.Thumb>
-                                        <Thumb>
+                                        <Thumb MinHeight="24">
                                             <Thumb.Template>
                                                 <ControlTemplate TargetType="Thumb">
-                                                    <Border CornerRadius="2" Background="{DynamicResource TrackBrush}" />
+                                                    <Border x:Name="ThumbBorder" CornerRadius="3"
+                                                            Margin="1,0"
+                                                            Background="{DynamicResource ScrollThumbBrush}" />
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="ThumbBorder" Property="Background"
+                                                                    Value="{DynamicResource ScrollThumbHoverBrush}" />
+                                                        </Trigger>
+                                                        <Trigger Property="IsDragging" Value="True">
+                                                            <Setter TargetName="ThumbBorder" Property="Background"
+                                                                    Value="{DynamicResource ScrollThumbPressedBrush}" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
                                                 </ControlTemplate>
                                             </Thumb.Template>
                                         </Thumb>

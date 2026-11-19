@@ -18,6 +18,9 @@
     <SolidColorBrush x:Key="AccentTextBrush" Color="#FF00314C" />
     <SolidColorBrush x:Key="TrackBrush" Color="#2EFFFFFF" />
     <SolidColorBrush x:Key="TrackOnBrush" Color="#FF4CC2FF" />
+    <SolidColorBrush x:Key="ScrollThumbBrush" Color="#40FFFFFF" />
+    <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#73FFFFFF" />
+    <SolidColorBrush x:Key="ScrollThumbPressedBrush" Color="#A6FFFFFF" />
     <SolidColorBrush x:Key="IconBrush" Color="#C7FFFFFF" />
     <SolidColorBrush x:Key="WarnBrush" Color="#FFFF6B6B" />
     <SolidColorBrush x:Key="ShadowBrush" Color="#66000000" />
