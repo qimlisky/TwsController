@@ -13,15 +13,23 @@ namespace PodsController.Services;
 public static class StartupRegistration
 {
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "VivoPodsCC";
+    private const string ValueName = "TwsController";
+    private const string LegacyValueName = "VivoPodsCC";
 
     public static bool IsEnabled()
     {
         try
         {
             using var key = Registry.CurrentUser.OpenSubKey(RunKey);
-            var value = key?.GetValue(ValueName) as string;
-            return !string.IsNullOrWhiteSpace(value);
+            var current = key?.GetValue(ValueName) as string;
+            var legacy = key?.GetValue(LegacyValueName) as string;
+            var command = !string.IsNullOrWhiteSpace(current) ? current : legacy;
+            if (string.IsNullOrWhiteSpace(command)) return false;
+
+            var exe = CurrentExePath();
+            // 从 dotnet 运行时无法知道发布后的 exe 路径，只按注册值是否存在判断。
+            if (exe is null) return true;
+            return CommandTargets(command, exe);
         }
         catch
         {
@@ -37,21 +45,68 @@ public static class StartupRegistration
                            ?? Registry.CurrentUser.CreateSubKey(RunKey);
             if (key is null) return false;
 
-            if (enabled)
-            {
-                var exe = Environment.ProcessPath;
-                if (string.IsNullOrEmpty(exe)) return false;
-                key.SetValue(ValueName, $"\"{exe}\"");
-            }
-            else
+            if (!enabled)
             {
                 key.DeleteValue(ValueName, throwOnMissingValue: false);
+                key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
+                return true;
             }
+
+            var exe = CurrentExePath();
+            if (exe is null)
+            {
+                AppLog.Runtime("开机自启动：当前不是发布版 exe，跳过注册");
+                return false;
+            }
+
+            key.SetValue(ValueName, $"\"{exe}\" --startup");
+            key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
             return true;
         }
         catch (Exception ex)
         {
             AppLog.Runtime($"开机自启动设置失败：{ex.Message}");
+            return false;
+        }
+    }
+
+    private static string? CurrentExePath()
+    {
+        var exe = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(exe)) return null;
+        // 源码调试时进程是 dotnet.exe，注册它没有意义。
+        if (Path.GetFileNameWithoutExtension(exe).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+        return exe;
+    }
+
+    private static bool CommandTargets(string command, string exe)
+    {
+        try
+        {
+            var trimmed = command.Trim();
+            string path;
+            if (trimmed.StartsWith('"'))
+            {
+                var end = trimmed.IndexOf('"', 1);
+                if (end <= 1) return false;
+                path = trimmed[1..end];
+            }
+            else
+            {
+                var gap = trimmed.IndexOf(' ');
+                path = gap < 0 ? trimmed : trimmed[..gap];
+            }
+
+            return string.Equals(
+                Path.GetFullPath(path.Trim()),
+                Path.GetFullPath(exe),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
             return false;
         }
     }

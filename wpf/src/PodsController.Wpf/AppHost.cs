@@ -357,6 +357,7 @@ public sealed class AppHost
         };
         _flyout.AutoShowToggled += enabled => _auto.AutoShow = enabled;
         _flyout.DarkThemeToggled += enabled => SetDark(enabled);
+        _flyout.StartupToggled += SetStartup;
         _flyout.FollowControlCenterToggled += SetControlCenterFollow;
         _flyout.ReconnectRequested += () =>
         {
@@ -382,10 +383,7 @@ public sealed class AppHost
             _flyout.SetDetectHint(enabled ? "" : "自动识别已关闭");
         });
         _tray.DarkThemeToggled += () => OnUi(() => SetDark(!_settings.GetBool("dark", true)));
-        _tray.StartupToggled += enabled => OnUi(() =>
-        {
-            if (StartupRegistration.SetEnabled(enabled)) AppLog.Runtime($"开机自启动：{enabled}");
-        });
+        _tray.StartupToggled += enabled => OnUi(() => SetStartup(enabled));
         _tray.FollowWinAToggled += enabled => OnUi(() =>
         {
             _hotkeys.FollowWinA = enabled;
@@ -407,6 +405,18 @@ public sealed class AppHost
         _flyout.ApplyThemeState(dark);
         try { _tray?.SetTheme(dark); } catch (Exception ex) { AppLog.Runtime($"托盘图标换色失败：{ex.Message}"); }
         AppLog.Runtime($"主题切换：{(dark ? "深色" : "浅色")}");
+    }
+
+    private void SetStartup(bool enabled)
+    {
+        if (StartupRegistration.SetEnabled(enabled))
+        {
+            AppLog.Runtime($"开机自启动：{enabled}");
+        }
+        else
+        {
+            AppLog.Runtime($"开机自启动设置未生效：{enabled}");
+        }
     }
 
     private void ConnectDemo(Vendor vendor)

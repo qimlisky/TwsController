@@ -12,6 +12,7 @@ using System.Windows.Threading;
 
 using PodsController.Core;
 using PodsController.Interop;
+using PodsController.Services;
 
 namespace PodsController.UI;
 
@@ -74,6 +75,7 @@ public partial class FlyoutWindow : Window
     private MenuItem? _miAutoShow;
     private MenuItem? _miAutoHide;
     private MenuItem? _miDark;
+    private MenuItem? _miStartup;
     private MenuItem? _miDevices;
     private MenuItem? _miCloseTray;
     private MenuItem? _miCloseExit;
@@ -125,6 +127,7 @@ public partial class FlyoutWindow : Window
     public event Action<bool>? AutoDetectToggled;
     public event Action<bool>? AutoShowToggled;
     public event Action<bool>? DarkThemeToggled;
+    public event Action<bool>? StartupToggled;
     public event Action<bool>? FollowControlCenterToggled;
     public event Action? QuitRequested;
     public event Action? ReconnectRequested;
@@ -1138,6 +1141,20 @@ public partial class FlyoutWindow : Window
         };
         _miDark.Click += (_, _) => DarkThemeToggled?.Invoke(_miDark.IsChecked);
 
+        _miStartup = new MenuItem
+        {
+            Header = "开机自启动",
+            IsCheckable = true,
+            IsChecked = StartupRegistration.IsEnabled(),
+            StaysOpenOnClick = true
+        };
+        _miStartup.Click += (_, _) =>
+        {
+            StartupToggled?.Invoke(_miStartup.IsChecked);
+            // 写注册表失败时，把勾选状态拉回真实状态。
+            _miStartup.IsChecked = StartupRegistration.IsEnabled();
+        };
+
         _miFollowCC = new MenuItem
         {
             Header = "跟随系统控制中心（Win+A）",
@@ -1202,6 +1219,7 @@ public partial class FlyoutWindow : Window
         menu.Items.Add(_miAutoShow);
         menu.Items.Add(new Separator());
         menu.Items.Add(_miDark);
+        menu.Items.Add(_miStartup);
         menu.Items.Add(_miFollowCC);
         menu.Items.Add(closeMenu);
         menu.Items.Add(_miAutoHide);
@@ -1236,6 +1254,7 @@ public partial class FlyoutWindow : Window
         if (_miAutoShow is not null) _miAutoShow.IsChecked = _settings.GetBool("auto_show", false);
         if (_miAutoHide is not null) _miAutoHide.IsChecked = _settings.GetBool("auto_hide", true);
         if (_miDark is not null) _miDark.IsChecked = _settings.GetBool("dark", true);
+        if (_miStartup is not null) _miStartup.IsChecked = StartupRegistration.IsEnabled();
         if (_miFollowCC is not null) _miFollowCC.IsChecked = _settings.GetBool("follow_control_center", false);
         SyncCloseActionState();
     }
