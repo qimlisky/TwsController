@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>PodsController</RootNamespace>
+    <AssemblyName>PodsController.Wpf</AssemblyName>
+    <ApplicationIcon>..\..\assets\app.ico</ApplicationIcon>
+
+    <!-- 非打包：WPF 本身就是普通桌面程序，双击 exe 直接跑 -->
+
+    <!-- .NET 不自包含：目标机需要装 .NET 10 Desktop Runtime（x64 / ARM64 对应） -->
+    <SelfContained>false</SelfContained>
+
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\assets\*.png" Link="assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\assets\*.ico" Link="assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
