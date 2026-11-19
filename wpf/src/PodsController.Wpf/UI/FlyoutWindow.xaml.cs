@@ -17,7 +17,7 @@ namespace PodsController.UI;
 
 /// <summary>
 /// 浮窗（1:1 对齐 Python 版 ui/flyout.py）：
-///   * 372×540，右下角贴边 EDGE_GAP=8，圆角 10，根边距 8；
+///   * 372 宽，右下角贴边 EDGE_GAP=8，圆角 10，根边距 8；高度按内容自适应；
 ///   * 显示：从屏幕下方滑入 + 淡入 300ms OutQuart；隐藏反向滑出后 Hide；
 ///   * 折叠：高度 200ms OutQuart 收放，底边锚定，紧凑电量 + 紧凑降噪；
 ///   * 自动弹出 5s 收回；点面板外收回；设置菜单顺序与文案同 Python。
@@ -27,6 +27,7 @@ public partial class FlyoutWindow : Window
     private const double PanelWidth = 372;
     private const double PanelHeight = 540;
     private const double CollapsedMinHeight = 180;
+    private const double ExpandedMinHeight = 280;
     private const double EdgeGap = 8;
     private const int SlideMs = 300;
     private const int CollapseMs = 200;
@@ -45,6 +46,7 @@ public partial class FlyoutWindow : Window
     private bool _suppress;
     private bool _pinned;
     private bool _collapsed;
+    private bool _adaptivePending;
     private bool _autoShown;
     private bool _menuOpen;
     private bool _allowClose;
@@ -307,8 +309,9 @@ public partial class FlyoutWindow : Window
     {
         _collapsed = collapsed;
         _settings.Set("collapsed", collapsed);
-        ApplyCompactLayout(collapsed, animate: true);
+        // 先按真实能力位刷新可见分区，再按实际内容高度收放，避免展开时先撑高再回缩。
         Refresh();
+        ApplyCompactLayout(collapsed, animate: true);
     }
 
     /// <summary>折叠 / 展开的布局与高度动画（200ms OutQuart，底边锚定）。</summary>
@@ -317,23 +320,14 @@ public partial class FlyoutWindow : Window
         BatteryTitle.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
         NoiseTitle.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
         NoiseSection.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
+        // 折叠态只保留电量 / 紧凑降噪；其余分区由 Refresh 按连接状态和能力位控制。
         CompactNoiseSeg.Visibility = collapsed && CompactNoiseAvailable() ? Visibility.Visible : Visibility.Collapsed;
-
-        // 折叠态除电量 / 紧凑降噪外全部隐藏（展开时交给 Refresh 按能力位恢复）
-        var extra = collapsed ? Visibility.Collapsed : Visibility.Visible;
-        SpatialRow.Visibility = extra;
-        GameRow.Visibility = extra;
-        MultiSection.Visibility = extra;
-        EqTitle.Visibility = extra;
-        EqPanel.Visibility = extra;
-        FindButton.Visibility = extra;
-        FirmwareText.Visibility = extra;
 
         ApplyPillMetrics(collapsed);
 
         FoldIcon.Text = collapsed ? "\uE70D" : "\uE70E";
 
-        var target = collapsed ? MeasureCollapsedHeight() : PanelHeight;
+        var target = MeasureWindowHeight(collapsed);
         var work = WorkArea();
         var targetTop = work.Bottom - target - EdgeGap;
 
@@ -353,6 +347,7 @@ public partial class FlyoutWindow : Window
                 Height = target;
                 Top = targetTop;
                 _animating = false;
+                ScheduleAdaptiveHeight();
             };
             BeginAnimation(TopProperty, topAnim);
             BeginAnimation(HeightProperty, heightAnim);
@@ -392,24 +387,6 @@ public partial class FlyoutWindow : Window
 
         var captionVisibility = compact ? Visibility.Collapsed : Visibility.Visible;
         LeftCaption.Visibility = RightCaption.Visibility = CaseCaption.Visibility = captionVisibility;
-    }
-
-    private double MeasureCollapsedHeight()
-    {
-        try
-        {
-            var contentWidth = Math.Max(100, Width - 16 - 24 - 4);
-            TitleBar.Measure(new Size(contentWidth, double.PositiveInfinity));
-            BodyStack.Measure(new Size(contentWidth, double.PositiveInfinity));
-            var body = BodyStack.DesiredSize.Height;
-            var title = TitleBar.DesiredSize.Height;
-            var height = 16 /* root margin */ + 10 + title + 8 /* title margin */ + body + 12;
-            return Math.Max(CollapsedMinHeight, height);
-        }
-        catch
-        {
-            return CollapsedMinHeight;
-        }
     }
 
     private void PinButton_Click(object sender, RoutedEventArgs e)
@@ -676,6 +653,103 @@ public partial class FlyoutWindow : Window
         finally
         {
             _suppress = false;
+            ScheduleAdaptiveHeight();
+        }
+    }
+
+    /// <summary>
+    /// 按当前实际可见内容计算窗口高度：功能少时收紧，功能多时变高；
+    /// 超过屏幕可用区域后交给 ContentScroll 滚动。
+    /// </summary>
+    private double MeasureWindowHeight(bool collapsed)
+    {
+        try
+        {
+            var contentWidth = Math.Max(100, Width - 16 - 24 - 4);
+            TitleBar.Measure(new Size(contentWidth, double.PositiveInfinity));
+
+            double body;
+            if (ContentScroll.Visibility == Visibility.Visible)
+            {
+                BodyStack.Measure(new Size(contentWidth, double.PositiveInfinity));
+                body = BodyStack.DesiredSize.Height;
+            }
+            else if (EmptySection.Visibility == Visibility.Visible)
+            {
+                EmptySection.Measure(new Size(contentWidth, double.PositiveInfinity));
+                body = EmptySection.DesiredSize.Height;
+            }
+            else
+            {
+                body = 0;
+            }
+
+            var firmware = 0.0;
+            if (FirmwareText.Visibility == Visibility.Visible)
+            {
+                FirmwareText.Measure(new Size(contentWidth, double.PositiveInfinity));
+                firmware = 6 + FirmwareText.DesiredSize.Height;
+            }
+
+            var title = TitleBar.DesiredSize.Height;
+            // root margin 16 + border 2 + padding 22 + 标题栏底边距 8 + 固件上边距 6
+            var height = 16 + 2 + 10 + title + 8 + body + firmware + 12;
+            var min = collapsed ? CollapsedMinHeight : ExpandedMinHeight;
+            var max = Math.Max(min, WorkArea().Height - 24);
+            return Math.Clamp(height, min, max);
+        }
+        catch
+        {
+            return collapsed ? CollapsedMinHeight : ExpandedMinHeight;
+        }
+    }
+
+    private void ScheduleAdaptiveHeight()
+    {
+        if (_adaptivePending) return;
+        _adaptivePending = true;
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            _adaptivePending = false;
+            if (_animating) return;
+            ResizeToContent(animate: false);
+        }), DispatcherPriority.Background);
+    }
+
+    private void ResizeToContent(bool animate)
+    {
+        var target = MeasureWindowHeight(_collapsed);
+        if (Math.Abs(Height - target) < 0.5) return;
+
+        var work = WorkArea();
+        if (animate && IsVisible)
+        {
+            _animating = true;
+            var topTarget = Math.Max(work.Top, work.Bottom - target - EdgeGap);
+            var heightAnim = new DoubleAnimation(Height, target, TimeSpan.FromMilliseconds(CollapseMs))
+            {
+                EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
+            };
+            heightAnim.Completed += (_, _) =>
+            {
+                Height = target;
+                Top = topTarget;
+                _animating = false;
+                ScheduleAdaptiveHeight();
+            };
+            BeginAnimation(HeightProperty, heightAnim);
+            AnimateTop(Top, topTarget, CollapseMs);
+            return;
+        }
+
+        // 保持底边贴边：高度变化时只改 Top，不改变窗口的下沿位置。
+        var oldBottom = Top + Height;
+        Height = target;
+        if (IsVisible && !double.IsNaN(oldBottom))
+        {
+            Top = Math.Max(work.Top, oldBottom - target);
+            if (Top + Height > work.Bottom - EdgeGap)
+                Top = Math.Max(work.Top, work.Bottom - EdgeGap - Height);
         }
     }
 
