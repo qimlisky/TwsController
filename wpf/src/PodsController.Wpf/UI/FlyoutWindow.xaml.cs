@@ -131,7 +131,7 @@ public partial class FlyoutWindow : Window
         if (IsVisible)
         {
             var anchor = WorkArea().Bottom - Height - EdgeGap;
-            AnimateTop(Top, anchor, SlideMs);
+            AnimateTop(Top, anchor, SlideMs, AnchorToBottom);
             BeginAnimation(OpacityProperty, new DoubleAnimation(Opacity, 1, TimeSpan.FromMilliseconds(SlideMs))
             {
                 EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
@@ -156,7 +156,7 @@ public partial class FlyoutWindow : Window
         Topmost = true;
 
         var targetTop = work.Bottom - Height - EdgeGap;
-        AnimateTop(Top, targetTop, SlideMs);
+        AnimateTop(Top, targetTop, SlideMs, AnchorToBottom);
         BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(SlideMs))
         {
             EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
@@ -250,6 +250,21 @@ public partial class FlyoutWindow : Window
         catch (Exception ex)
         {
             AppLog.Runtime($"浮窗定位失败：{ex.Message}");
+        }
+    }
+
+    /// <summary>以屏幕工作区底边为基准向上定位，保证底部内容始终可见。</summary>
+    private void AnchorToBottom()
+    {
+        try
+        {
+            if (!IsVisible || double.IsNaN(Top)) return;
+            var work = WorkArea();
+            Top = Math.Max(work.Top, work.Bottom - Height - EdgeGap);
+        }
+        catch
+        {
+            // 定位失败时保留当前位置
         }
     }
 
@@ -743,13 +758,13 @@ public partial class FlyoutWindow : Window
         }
 
         // 保持底边贴边：高度变化时只改 Top，不改变窗口的下沿位置。
-        var oldBottom = Top + Height;
+        // 以当前下沿为基准向上计算，并限制在屏幕工作区内，避免底部内容被顶出屏幕。
+        var bottom = Math.Min(work.Bottom - EdgeGap,
+            Math.Max(work.Top + target, Top + Height));
         Height = target;
-        if (IsVisible && !double.IsNaN(oldBottom))
+        if (IsVisible && !double.IsNaN(bottom))
         {
-            Top = Math.Max(work.Top, oldBottom - target);
-            if (Top + Height > work.Bottom - EdgeGap)
-                Top = Math.Max(work.Top, work.Bottom - EdgeGap - Height);
+            Top = Math.Max(work.Top, bottom - target);
         }
     }
 
