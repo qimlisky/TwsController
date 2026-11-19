@@ -49,6 +49,8 @@ public partial class FlyoutWindow : Window
     private bool _menuOpen;
     private bool _allowClose;
     private bool _animating;
+    private bool _findRinging;
+    private bool _findBusy;
     private bool _windowShownOnce;
     private string _detectHint = "";
     private DateTime _shownAt = DateTime.MinValue;
@@ -651,6 +653,12 @@ public partial class FlyoutWindow : Window
             EqPanel.Visibility = eqVisible ? Visibility.Visible : Visibility.Collapsed;
             if (eqVisible) RebuildEq(eqOptions, state?.EqMode ?? -1);
 
+            if (!connected && _findRinging)
+            {
+                try { _hub.Find(false); } catch { /* 忽略 */ }
+                ResetFindUi();
+            }
+
             FindButton.Visibility = connected && features.Visible(Feature.Find) && !_collapsed
                 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -774,7 +782,44 @@ public partial class FlyoutWindow : Window
         _hub.SetGame(GameSwitch.IsChecked == true);
     }
 
-    private void Find_Click(object sender, RoutedEventArgs e) => _hub.Find(true);
+    private async void Find_Click(object sender, RoutedEventArgs e)
+    {
+        if (_findBusy) return;
+
+        var start = FindButton.IsChecked == true;
+        _findRinging = start;
+        FindText.Text = start ? "取消" : "查找耳机";
+        try
+        {
+            _hub.Find(start);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Runtime($"查找耳机失败：{ex.Message}");
+            ResetFindUi();
+            return;
+        }
+
+        // 开始 / 取消后短暂锁定，避免连点把设备来回切。
+        _findBusy = true;
+        FindButton.IsEnabled = false;
+        try
+        {
+            await Task.Delay(800);
+        }
+        finally
+        {
+            _findBusy = false;
+            FindButton.IsEnabled = true;
+        }
+    }
+
+    private void ResetFindUi()
+    {
+        _findRinging = false;
+        FindButton.IsChecked = false;
+        FindText.Text = "查找耳机";
+    }
 
     private void DemoVivo_Click(object sender, RoutedEventArgs e) => DemoRequested?.Invoke(Vendor.Vivo);
     private void DemoHuawei_Click(object sender, RoutedEventArgs e) => DemoRequested?.Invoke(Vendor.Huawei);

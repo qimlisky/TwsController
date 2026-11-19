@@ -320,17 +320,19 @@
                             <WrapPanel x:Name="EqPanel" Margin="0,0,0,2" />
 
                             <!-- 查找耳机 -->
-                            <Button x:Name="FindButton" Style="{StaticResource GhostButtonStyle}"
-                                    HorizontalAlignment="Stretch" Height="34" Click="Find_Click"
-                                    Visibility="Collapsed">
+                            <ToggleButton x:Name="FindButton" Style="{StaticResource FindToggleStyle}"
+                                          HorizontalAlignment="Stretch" Height="34" Click="Find_Click"
+                                          Visibility="Collapsed">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                     <Path Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"
                                           Data="M11 4a7 7 0 1 0 4.2 12.6l4.1 4.1 1.4-1.4-4.1-4.1A7 7 0 0 0 11 4z"
-                                          Stroke="{DynamicResource IconBrush}" StrokeThickness="1.7"
+                                          Stroke="{Binding Foreground, ElementName=FindButton}" StrokeThickness="1.7"
                                           StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
-                                    <TextBlock Text="查找耳机" Margin="6,0,0,0" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="FindText" Text="查找耳机" Margin="6,0,0,0"
+                                               Foreground="{Binding Foreground, ElementName=FindButton}"
+                                               VerticalAlignment="Center" />
                                 </StackPanel>
-                            </Button>
+                            </ToggleButton>
                         </StackPanel>
                     </ScrollViewer>
 
