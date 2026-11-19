@@ -63,6 +63,20 @@ public sealed class AppHost
         AppLog.Flush();   // 启动日志立即落盘，后续崩溃 / 退出也有据可查
 
         _settings = new SettingsStore();
+        // 默认：点 X 回托盘小图标，不退出程序；只有显式选过「直接退出」才退出。
+        if (!_settings.Contains("close_action"))
+        {
+            _settings.Set("close_action", "tray");
+        }
+        else
+        {
+            var closeAction = _settings.Get("close_action", "tray");
+            if (!string.Equals(closeAction, "tray", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(closeAction, "exit", StringComparison.OrdinalIgnoreCase))
+            {
+                _settings.Set("close_action", "tray");
+            }
+        }
         AppLog.ControlCenterLogEnabled = _settings.GetBool("ccwatch_log", true);
 
         // ---- 主题（深色 / 浅色）----

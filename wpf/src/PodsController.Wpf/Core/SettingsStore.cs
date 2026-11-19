@@ -68,6 +68,14 @@ public sealed class SettingsStore
         }
     }
 
+    public bool Contains(string key)
+    {
+        lock (_gate)
+        {
+            return _values.ContainsKey(key);
+        }
+    }
+
     public bool GetBool(string key, bool fallback = false)
     {
         var text = Get(key, fallback ? "true" : "false").Trim().ToLowerInvariant();
