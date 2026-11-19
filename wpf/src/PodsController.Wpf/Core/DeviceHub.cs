@@ -78,8 +78,8 @@ public sealed class DeviceHub
                 break;
             }
             case Vendor.Vivo:
-                // vivo 私有协议源码（vivo/ 目录）不在本仓库，无法一比一移植
-                RaiseError("vivo / iQOO 的真实控制链路尚未移植到 C#（vivo/ 源码缺失），请先用演示模式。");
+                // vivo 的 Python 协议源码在仓库里，但 C# 侧还没有对应 Session。
+                RaiseError("vivo / iQOO 的真实控制链路尚未移植到 C#，当前请先用演示模式。");
                 break;
             default:
                 RaiseError($"未知品牌：{info.Name}");
