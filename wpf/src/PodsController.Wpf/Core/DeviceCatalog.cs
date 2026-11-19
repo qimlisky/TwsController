@@ -114,6 +114,15 @@ public static class DeviceCatalog
             return true;
         }
 
+        // 参考项目对协议兼容的红米 / 小米耳机按家族处理：先尝试连接，
+        // 具体能力仍由回包决定；未验证型号可能只有部分功能。
+        if (RedmiCatalog.IsFamilyName(name))
+        {
+            vendor = Vendor.Redmi;
+            canonical = RedmiCatalog.DisplayName(name);
+            return true;
+        }
+
         return false;
     }
 
