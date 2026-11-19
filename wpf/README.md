@@ -75,7 +75,7 @@ UI/Themes/Dark.xaml
 `TitleTextBrush` / `SubTextBrush` / `AccentBrush` / `ControlBackgroundBrush` /
 `SwitchOffBrush` 等，浅色深色一一对应，想换配色只改这两个文件。
 
-窗口尺寸 396×582（折叠 212），外圈留 8px 给圆角阴影，实际内容宽度仍是 380。
+窗口尺寸 396×582（折叠 212），外圈留 8px 边距；投影已去掉，只保留 1px 描边和圆角。
 
 ---
 
@@ -139,6 +139,16 @@ dotnet build .\wpf\PodsController.Wpf.sln -c Release -p:Platform=x64
 3. **托盘已按 Python 版补齐**：深浅色切换时托盘图标跟着换（`assets/app_dark.ico` 亮色图 / `app_light.ico` 灰色图，缺失回退 `app.ico`）；右键菜单含「显示面板（设备名）」「自动识别」「选择设备（枚举已配对的支持型号）」「三品牌演示」「深色模式」「开机自启动」「跟随 Win+A」「跟随系统控制中心」「关闭按钮：收起到托盘 / 退出程序」「退出」；左键单击唤出面板，睡眠唤醒后重挂图标，tooltip 跟着电量走。
 4. 之前 `winui3/` 工程保留未动（里面的 `OppoProtocol` 常量/方法重名 CS0102 已一并改名修掉），
    可以随时删掉；新的入口是 `wpf/PodsController.Wpf.sln`。
+
+---
+
+## Redmi / 小米耳机
+
+- 已验证：**Redmi Buds 8 Pro**（RCSP / SAFER+ / `fd2d` RFCOMM）。
+- 协议兼容的 Redmi / Xiaomi Buds 按家族识别，先尝试连接；未验证型号可能只有部分功能。
+- 已接入：降噪三档、空间音频开关、低延迟；EQ / 查找耳机暂未接入。
+- 演示模式：`TwsController.exe --demo=redmi`。
+- 协议来源与 MIT 许可原文见 `THIRD_PARTY_NOTICES.md`。
 
 ---
 
