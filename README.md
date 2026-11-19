@@ -6,6 +6,23 @@
 使用非打包应用  
 目前我只有红米buds4pro设备进行测试。也不知道其他设备能否正常使用。要是有什么问题可以反馈，反正是AI修。  
 > 本项目仅供学习，非官方功能，使用风险自负。
+
+
+## 快速开始（源码运行）
+
+需安装.NET 10 SDK  
+```
+cd \TwsController\wpf
+dotnet publish .\src\PodsController.Wpf\PodsController.Wpf.csproj ^
+  -c Release ^
+  -r win-x64 ^
+  --self-contained false ^
+  -p:Platform=x64 ^
+  -o .\dist\win-x64
+```
+或者使用GitHub Action构建
+
+
 # VivoPodsCC — vivo / iQOO 耳机 Windows 控制台
 
 一个仿 **Windows 11 控制中心** 风格的 vivo TWS 耳机控制面板：后台常驻系统托盘，
@@ -59,19 +76,7 @@
 > 请在系统「蓝牙和设备」里查看耳机的**蓝牙名称**。如果你的型号不在列表里，
 > 首次连接后把日志（或无效的功能）反馈出来即可补充适配。
 
-## 快速开始（源码运行）
 
-需安装.NET 10 SDK  
-```
-cd \TwsController\wpf
-dotnet publish .\src\PodsController.Wpf\PodsController.Wpf.csproj ^
-  -c Release ^
-  -r win-x64 ^
-  --self-contained false ^
-  -p:Platform=x64 ^
-  -o .\dist\win-x64
-```
-或者使用GitHub Action构建
 
 ## 真机连接要点
 
