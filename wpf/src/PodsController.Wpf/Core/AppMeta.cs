@@ -37,25 +37,34 @@ public static class AppPaths
     public static string LocalDir =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), SettingsOrg);
 
+    /// <summary>日志目录：放在当前程序目录下的 log\，方便直接查看和打包带走。</summary>
+    public static string LogDir => Path.Combine(AppContext.BaseDirectory, "log");
+
     public static string SettingsFile => Path.Combine(RoamingDir, SettingsFileName);
 
-    public static string RuntimeLog => Path.Combine(LocalDir, "runtime.log");
+    public static string RuntimeLog => Path.Combine(LogDir, "runtime.log");
 
-    public static string CrashLog => Path.Combine(LocalDir, "crash.log");
+    public static string CrashLog => Path.Combine(LogDir, "crash.log");
 
     public static string CleanExitFlag => Path.Combine(LocalDir, "clean_exit");
 
-    public static string TaskbarLog => Path.Combine(LocalDir, "taskbar.log");
+    public static string TaskbarLog => Path.Combine(LogDir, "taskbar.log");
 
-    public static string ControlCenterLog => Path.Combine(LocalDir, "ccwatch.log");
+    public static string ControlCenterLog => Path.Combine(LogDir, "ccwatch.log");
 
     public static string AssetsDir => Path.Combine(AppContext.BaseDirectory, "assets");
 
     public static string IconPath => Path.Combine(AssetsDir, "app.ico");
 
-    /// <summary>确保 %LOCALAPPDATA%\VivoPodsCC 存在（日志 / 崩溃记录要落地）。</summary>
+    /// <summary>确保程序目录下的 log\ 存在（日志落地在这里）。</summary>
+    public static void EnsureLogDir()
+    {
+        try { Directory.CreateDirectory(LogDir); } catch { /* 忽略：只影响日志 */ }
+    }
+
+    /// <summary>确保 %LOCALAPPDATA%\VivoPodsCC 存在（clean_exit 标记用）。</summary>
     public static void EnsureLocalDir()
     {
-        try { Directory.CreateDirectory(LocalDir); } catch { /* 忽略：只影响日志 */ }
+        try { Directory.CreateDirectory(LocalDir); } catch { /* 忽略 */ }
     }
 }

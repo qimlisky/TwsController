@@ -8,7 +8,7 @@ namespace PodsController.Core;
 /// <summary>
 /// 运行日志（对应 Python 版 keepalive.log_runtime / log_heartbeat）。
 ///
-/// 与 Python 版保持同样的落盘位置：%LOCALAPPDATA%\VivoPodsCC\
+/// 日志落在当前程序目录下的 log\：
 ///   runtime.log    启动 / 连接 / 唤醒 / 热键等过程
 ///   crash.log      未处理异常
 ///   taskbar.log    托盘重挂、自动识别（不受「控制中心日志」开关影响）
@@ -98,7 +98,7 @@ public static class AppLog
         {
             try
             {
-                AppPaths.EnsureLocalDir();
+                AppPaths.EnsureLogDir();
                 var batches = new Dictionary<string, StringBuilder>(StringComparer.OrdinalIgnoreCase);
 
                 while (Queue.TryDequeue(out var entry))
