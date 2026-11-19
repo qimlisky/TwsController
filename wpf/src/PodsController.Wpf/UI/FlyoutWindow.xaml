@@ -16,6 +16,7 @@
         SnapsToDevicePixels="True">
 
     <Border x:Name="RootBorder" CornerRadius="10" Margin="8"
+            VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
             Background="{DynamicResource RootBrush}"
             BorderBrush="{DynamicResource StrokeBrush}"
             BorderThickness="1">
