@@ -303,6 +303,16 @@ public sealed class AppHost
             _autoShowPending = false;
             _flyout.ShowFlyout("auto");
         }
+        else if (!connected)
+        {
+            // 设备断开 1 分钟后，如果面板仍隐藏且没有重新连上，再做一次空闲回收。
+            // 断开瞬间不回收，避免用户正在看断开提示时触发 GC。
+            After(60000, () =>
+            {
+                if (_shuttingDown || _flyout.IsVisible || _hub.State?.Connected == true) return;
+                MemoryTrim.Schedule(null, 0);
+            });
+        }
     }
 
     // ------------------------------------------------------------------ //
