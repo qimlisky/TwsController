@@ -9,7 +9,7 @@ namespace PodsController.Core;
 public static class AppMeta
 {
     /// <summary>对外展示的软件名（Python 版 v3.20 起统一叫这个名字）。</summary>
-    public const string AppName = "VivoPods Controller";
+    public const string AppName = "TwsController";
 
     /// <summary>对外展示的软件版本（关于页第一行：软件版本 V11.45.85）。</summary>
     public const string AppVersion = "11.45.85";

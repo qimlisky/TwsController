@@ -1,8 +1,8 @@
-# VivoPods Controller · WPF 版
+# TwsController · WPF 版
 
-工程名 / 程序集名：`PodsController.Wpf`（解决方案 `PodsController.Wpf.sln`）。
-运行时标识仍沿用 Python 版：配置目录 `%APPDATA%\VivoPodsCC`、日志 `%LOCALAPPDATA%\VivoPodsCC`、
-单实例名 `Local\VivoPodsCC.*`、快捷方式「VivoPods Controller」，两边可共用同一份配置。
+显示名：`TwsController`；工程名 / 程序集名保持不变：`PodsController.Wpf`（解决方案 `PodsController.Wpf.sln`），输出仍是 `PodsController.Wpf.exe`。
+运行时标识仍沿用 Python 版：配置目录 `%APPDATA%\VivoPodsCC`、日志 `<程序目录>\log`、
+单实例名 `Local\VivoPodsCC.*`、快捷方式「TwsController」，两边可共用同一份配置。
 
 按你的要求，界面不再用 WinUI 3，改成 **WPF**，并把界面做成和 Python 版（PySide6 浮窗）
 一样的结构，另加**深色 / 浅色主题切换**。
@@ -104,7 +104,7 @@ wpf/
 
 * 配置 `%APPDATA%\VivoPodsCC\config.ini`（键名不变：`dark` / `auto_detect` /
   `last_device_mac` / `follow_win_a` / `pin` …）
-* 日志 `%LOCALAPPDATA%\VivoPodsCC\{runtime,crash,taskbar,ccwatch}.log`
+* 日志 `<程序目录>\log\{runtime,crash,taskbar,ccwatch}.log`
 
 ---
 

@@ -65,7 +65,7 @@ public static class StartupRegistration
 /// </summary>
 public static class DesktopShortcut
 {
-    private const string LinkName = "VivoPods Controller.lnk";
+    private const string LinkName = "TwsController.lnk";
 
     public static string? ExePath()
     {
