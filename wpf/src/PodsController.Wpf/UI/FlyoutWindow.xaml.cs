@@ -518,6 +518,7 @@ public partial class FlyoutWindow : Window
     {
         AboutVersionText.Text = AppMeta.VersionText;
         AboutAuthorText.Text = AppMeta.AuthorText;
+        AboutCreditText.Text = "红米 / 小米协议参考：FallenLeeee / MiBudsController（MIT License）";
         AboutIcon.Source = LoadImage("app_icon.png");
         DisconnectPhoto.Source = LoadImage("pods.png");
         UpdateDeviceImage();
@@ -867,6 +868,7 @@ public partial class FlyoutWindow : Window
         AddMenuItem(demo, "vivo TWS（演示）", () => DemoRequested?.Invoke(Vendor.Vivo));
         AddMenuItem(demo, "华为 FreeBuds Pro 5（演示）", () => DemoRequested?.Invoke(Vendor.Huawei));
         AddMenuItem(demo, "OPPO Enco X4（演示）", () => DemoRequested?.Invoke(Vendor.Oppo));
+        AddMenuItem(demo, "Redmi Buds 8 Pro（演示）", () => DemoRequested?.Invoke(Vendor.Redmi));
 
         _miAutoDetect = new MenuItem
         {

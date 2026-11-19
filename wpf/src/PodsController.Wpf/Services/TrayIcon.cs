@@ -41,6 +41,7 @@ public sealed class TrayIcon : IDisposable
     private const int CmdDemoVivo = 110;
     private const int CmdDemoHuawei = 111;
     private const int CmdDemoOppo = 112;
+    private const int CmdDemoRedmi = 113;
     private const int CmdDark = 120;
     private const int CmdStartup = 121;
     private const int CmdFollowWinA = 122;
@@ -255,6 +256,7 @@ public sealed class TrayIcon : IDisposable
         demo.Items.Add(TrayItem("vivo TWS", () => DemoRequested?.Invoke(Vendor.Vivo)));
         demo.Items.Add(TrayItem("华为 FreeBuds Pro 5", () => DemoRequested?.Invoke(Vendor.Huawei)));
         demo.Items.Add(TrayItem("OPPO Enco X4", () => DemoRequested?.Invoke(Vendor.Oppo)));
+        demo.Items.Add(TrayItem("Redmi Buds 8 Pro", () => DemoRequested?.Invoke(Vendor.Redmi)));
         menu.Items.Add(demo);
         menu.Items.Add(new Separator());
 
@@ -425,6 +427,7 @@ public sealed class TrayIcon : IDisposable
             case CmdDemoVivo: DemoRequested?.Invoke(Vendor.Vivo); break;
             case CmdDemoHuawei: DemoRequested?.Invoke(Vendor.Huawei); break;
             case CmdDemoOppo: DemoRequested?.Invoke(Vendor.Oppo); break;
+            case CmdDemoRedmi: DemoRequested?.Invoke(Vendor.Redmi); break;
             case CmdDark: DarkThemeToggled?.Invoke(); break;
             case CmdStartup: StartupToggled?.Invoke(!state.Startup); break;
             case CmdFollowWinA: FollowWinAToggled?.Invoke(!state.FollowWinA); break;

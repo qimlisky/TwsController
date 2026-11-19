@@ -188,6 +188,7 @@ public sealed class AppHost
                 {
                     "huawei" or "hw" or "honor" => Vendor.Huawei,
                     "oppo" or "oneplus" or "realme" => Vendor.Oppo,
+                    "redmi" or "xiaomi" or "mi" => Vendor.Redmi,
                     _ => Vendor.Vivo
                 };
             }
@@ -210,6 +211,10 @@ public sealed class AppHost
         var mac = _settings.Get("last_device_mac");
         var name = _settings.Get("last_device_name");
         var vendor = VendorNames.FromKey(_settings.Get("last_device_vendor"));
+        if (vendor == Vendor.Unknown && name.Length > 0)
+        {
+            DeviceCatalog.TryDetect(name, out vendor, out _);
+        }
 
         if (mac.Length > 0 && name.Length > 0 && DeviceCatalog.IsSupported(name))
         {

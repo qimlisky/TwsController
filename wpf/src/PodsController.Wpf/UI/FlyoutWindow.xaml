@@ -340,7 +340,7 @@
                             <TextBlock Text="未连接到耳机" FontSize="11" FontWeight="DemiBold"
                                        Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center"
                                        Margin="0,8,0,0" />
-                            <Button x:Name="ConnectButton" Content="选择耳机（vivo / 华为 / OPPO）"
+                            <Button x:Name="ConnectButton" Content="选择耳机（vivo / 华为 / OPPO / Redmi）"
                                     Style="{StaticResource AccentButtonStyle}" Margin="0,10,0,0"
                                     Click="ConnectButton_Click" />
                             <TextBlock x:Name="DetectText" Style="{StaticResource FootnoteStyle}"
@@ -373,6 +373,10 @@
                                        HorizontalAlignment="Center" Margin="0,4,0,0" />
                             <TextBlock x:Name="AboutAuthorText" Style="{StaticResource SubtitleStyle}"
                                        HorizontalAlignment="Center" Margin="0,2,0,0" />
+                            <TextBlock x:Name="AboutCreditText" FontSize="9.5" TextWrapping="Wrap"
+                                       TextAlignment="Center" Width="280"
+                                       Foreground="{DynamicResource SubTextBrush}"
+                                       HorizontalAlignment="Center" Margin="0,10,0,0" />
                         </StackPanel>
                     </Grid>
                 </Grid>

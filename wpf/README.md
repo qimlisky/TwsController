@@ -7,7 +7,7 @@
 按你的要求，界面不再用 WinUI 3，改成 **WPF**，并把界面做成和 Python 版（PySide6 浮窗）
 一样的结构，另加**深色 / 浅色主题切换**。
 
-设备层（华为 SPP / OPPO 私有协议 / vivo 型号识别 / 蓝牙枚举 / 托盘 / 热键 / 控制中心跟随）
+设备层（华为 SPP / OPPO 私有协议 / Redmi RCSP / vivo 型号识别 / 蓝牙枚举 / 托盘 / 热键 / 控制中心跟随）
 直接复用之前移植好的 C# 代码，只把 UI 从 WinUI 换成 WPF。
 
 > 只产出源码：本目录**未编译、未运行**过。
@@ -48,7 +48,7 @@
 * **无系统标题栏**：`WindowStyle=None` + 圆角 + 阴影，拖动走 `DragMove()`。
 * **右下角贴边**：按当前显示器工作区（物理像素 → DIP 换算）。
 * **点面板外面自动收起**（固定后不收起）；**自动弹出后 5 秒无操作自动收回**。
-* **齿轮 ⚙ 菜单**：重新连接 / 选择设备（已配对的支持型号）/ 演示模式（vivo·华为·OPPO）/
+* **齿轮 ⚙ 菜单**：重新连接 / 选择设备（已配对的支持型号）/ 演示模式（vivo·华为·OPPO·Redmi）/
   自动识别 / 识别后自动弹窗 / 自动收回 / **深色模式** / 跟随系统控制中心 / 关于 / 退出。
 * **关于页**：耳机图 + 软件版本 V11.45.85 + 作者，返回控制页。
 * 分区按能力矩阵显隐（无 ANC 的 FreeClip 2 不显示降噪；华为不显示查找/空间音频等）。
@@ -91,7 +91,7 @@ wpf/
    ├─ App.xaml / App.xaml.cs     # 全局样式 + 单实例 → AppHost.Start()
    ├─ AppHost.cs                 # app.py 的 VivoPodsApp
    ├─ Core/                      # 元信息 / 日志 / 设置 / 型号能力 / 蓝牙枚举 / 自动识别
-   ├─ Devices/                   # 华为会话、OPPO 会话、演示会话
+   ├─ Devices/                   # 华为会话、OPPO 会话、Redmi RCSP 会话、演示会话
    ├─ Interop/                   # P/Invoke、RFCOMM、隐藏消息窗口
    ├─ Services/                  # 托盘、热键、控制中心跟随、开机自启与快捷方式
    └─ UI/
@@ -122,6 +122,7 @@ dotnet build .\wpf\PodsController.Wpf.sln -c Release -p:Platform=x64
 .\TwsController.exe --demo            # vivo
 .\TwsController.exe --demo=huawei     # 华为 FreeBuds Pro 5
 .\TwsController.exe --demo=oppo       # OPPO Enco X4
+.\TwsController.exe --demo=redmi      # Redmi Buds 8 Pro
 ```
 
 `Platform` 必须显式给 `x64` 或 `ARM64`。
@@ -138,3 +139,17 @@ dotnet build .\wpf\PodsController.Wpf.sln -c Release -p:Platform=x64
 3. **托盘已按 Python 版补齐**：深浅色切换时托盘图标跟着换（`assets/app_dark.ico` 亮色图 / `app_light.ico` 灰色图，缺失回退 `app.ico`）；右键菜单含「显示面板（设备名）」「自动识别」「选择设备（枚举已配对的支持型号）」「三品牌演示」「深色模式」「开机自启动」「跟随 Win+A」「跟随系统控制中心」「关闭按钮：收起到托盘 / 退出程序」「退出」；左键单击唤出面板，睡眠唤醒后重挂图标，tooltip 跟着电量走。
 4. 之前 `winui3/` 工程保留未动（里面的 `OppoProtocol` 常量/方法重名 CS0102 已一并改名修掉），
    可以随时删掉；新的入口是 `wpf/PodsController.Wpf.sln`。
+
+---
+
+## 第三方与许可
+
+Redmi / 小米耳机协议（RCSP 帧、SAFER+ 鉴权、fd2d RFCOMM、Config 0x1D/0x2F 等）参考并移植自
+**FallenLeeee / MiBudsController**，MIT License：
+
+- 作者：FallenLeeee / MiBudsController Contributors
+- 仓库：https://github.com/FallenLeeee/MiBudsController
+
+完整版权与许可原文见仓库根目录 `THIRD_PARTY_NOTICES.md`。程序「关于」页也标注了该来源。
+MiBudsController 与本项目均为非官方项目，与小米 / Redmi 无隶属关系。
+

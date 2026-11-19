@@ -1,5 +1,6 @@
 using PodsController.Devices.Huawei;
 using PodsController.Devices.Oppo;
+using PodsController.Devices.Redmi;
 
 namespace PodsController.Core;
 
@@ -106,6 +107,13 @@ public static class DeviceCatalog
             return true;
         }
 
+        if (RedmiCatalog.FindModel(name) is { } redmi)
+        {
+            vendor = Vendor.Redmi;
+            canonical = redmi;
+            return true;
+        }
+
         return false;
     }
 
@@ -125,6 +133,10 @@ public static class DeviceCatalog
         {
             return OppoCatalog.DisplayName(name);
         }
+        if (vendor == Vendor.Redmi || (vendor == Vendor.Unknown && RedmiCatalog.IsFamilyName(name)))
+        {
+            return RedmiCatalog.DisplayName(name);
+        }
         if (VivoFindModel(name) is { } vivo) return vivo;
         if (IsVivoFamily(name)) return "vivo / iQOO 耳机（家族兼容）";
         return name;
@@ -138,6 +150,7 @@ public static class DeviceCatalog
             Vendor.Vivo => VivoFeatures(VivoFindModel(name)),
             Vendor.Huawei => HuaweiCatalog.Features(HuaweiCatalog.FindModel(name)),
             Vendor.Oppo => OppoCatalog.BaseFeatures(),
+            Vendor.Redmi => RedmiCatalog.Features(),
             _ => FeatureSet.Empty,
         };
     }

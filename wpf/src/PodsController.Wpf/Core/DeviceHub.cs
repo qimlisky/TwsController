@@ -1,6 +1,7 @@
 using PodsController.Devices;
 using PodsController.Devices.Huawei;
 using PodsController.Devices.Oppo;
+using PodsController.Devices.Redmi;
 
 namespace PodsController.Core;
 
@@ -73,6 +74,13 @@ public sealed class DeviceHub
             case Vendor.Oppo:
             {
                 var session = new OppoSession(info);
+                Attach(session);
+                session.Connect();
+                break;
+            }
+            case Vendor.Redmi:
+            {
+                var session = new RedmiSession(info);
                 Attach(session);
                 session.Connect();
                 break;

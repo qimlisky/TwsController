@@ -23,6 +23,7 @@ public sealed class DemoSession : EarbudSession
         Vendor.Vivo => "TWS 5",
         Vendor.Huawei => "FreeBuds Pro 5",
         Vendor.Oppo => "Enco X4",
+        Vendor.Redmi => "Redmi Buds 8 Pro",
         _ => "演示耳机"
     };
 
@@ -89,6 +90,14 @@ public sealed class DemoSession : EarbudSession
                 State.Game = 0;
                 State.WearLeft = "worn";
                 State.WearRight = "worn";
+                break;
+
+            case Vendor.Redmi:
+                State.Spatial = 0;
+                State.Game = 0;
+                State.WearLeft = "unknown";
+                State.WearRight = "unknown";
+                State.MultiPoint.Clear();
                 break;
         }
 

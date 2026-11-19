@@ -6,7 +6,8 @@ public enum Vendor
     Unknown = 0,
     Vivo = 1,
     Huawei = 2,
-    Oppo = 3
+    Oppo = 3,
+    Redmi = 4
 }
 
 public static class VendorNames
@@ -16,6 +17,7 @@ public static class VendorNames
         Vendor.Vivo => "vivo",
         Vendor.Huawei => "huawei",
         Vendor.Oppo => "oppo",
+        Vendor.Redmi => "redmi",
         _ => ""
     };
 
@@ -24,6 +26,7 @@ public static class VendorNames
         "vivo" or "iqoo" => Vendor.Vivo,
         "huawei" or "honor" or "hw" => Vendor.Huawei,
         "oppo" or "oneplus" or "realme" => Vendor.Oppo,
+        "redmi" or "xiaomi" or "mi" => Vendor.Redmi,
         _ => Vendor.Unknown
     };
 
@@ -32,6 +35,7 @@ public static class VendorNames
         Vendor.Vivo => "vivo / iQOO",
         Vendor.Huawei => "华为 / HONOR",
         Vendor.Oppo => "OPPO / 一加 / realme",
+        Vendor.Redmi => "Redmi / 小米",
         _ => "未知品牌"
     };
 }

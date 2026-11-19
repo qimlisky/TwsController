@@ -8,7 +8,7 @@
     <AssemblyName>TwsController</AssemblyName>
     <AssemblyTitle>TwsController</AssemblyTitle>
     <Product>TwsController</Product>
-    <Description>TwsController - vivo / 华为 / OPPO TWS 控制面板</Description>
+    <Description>TwsController - vivo / 华为 / OPPO / Redmi TWS 控制面板</Description>
     <ApplicationIcon>..\..\assets\app.ico</ApplicationIcon>
 
     <!-- 非打包：WPF 本身就是普通桌面程序，双击 exe 直接跑 -->

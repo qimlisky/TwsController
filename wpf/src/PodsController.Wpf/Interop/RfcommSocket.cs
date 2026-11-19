@@ -21,10 +21,13 @@ public sealed class RfcommSocket : IDisposable
     public int Channel { get; }
     public bool Connected { get; private set; }
 
-    private RfcommSocket(string mac, int channel)
+    private readonly Guid _serviceClassId;
+
+    private RfcommSocket(string mac, int channel, Guid serviceClassId = default)
     {
         Mac = mac;
         Channel = channel;
+        _serviceClassId = serviceClassId;
     }
 
     /// <summary>按通道列表依次尝试，第一条成功即返回；全部失败抛出最后一次错误。</summary>
@@ -49,6 +52,24 @@ public sealed class RfcommSocket : IDisposable
             lastError?.Message ?? "RFCOMM 连接失败：没有可用通道");
     }
 
+    /// <summary>
+    /// 通过 SDP 服务 UUID 连接（Port=0），用于小米 fd2d 这类不能写死通道的服务。
+    /// </summary>
+    public static RfcommSocket Connect(string mac, Guid serviceClassId)
+    {
+        var socket = new RfcommSocket(mac, 0, serviceClassId);
+        try
+        {
+            socket.Open();
+            return socket;
+        }
+        catch
+        {
+            socket.Dispose();
+            throw;
+        }
+    }
+
     private void Open()
     {
         EnsureWsa();
@@ -69,8 +90,8 @@ public sealed class RfcommSocket : IDisposable
         {
             AddressFamily = Native.AF_BTH,
             BtAddr = address,
-            ServiceClassId = Guid.Empty,
-            Port = (uint)Channel
+            ServiceClassId = _serviceClassId,
+            Port = _serviceClassId == Guid.Empty ? (uint)Channel : 0
         };
 
         var size = Marshal.SizeOf<Native.SockAddrBth>();
@@ -78,8 +99,11 @@ public sealed class RfcommSocket : IDisposable
         {
             var err = Native.WSAGetLastError();
             Native.closesocket(handle);
+            var target = _serviceClassId == Guid.Empty
+                ? $"通道 {Channel}"
+                : $"服务 {_serviceClassId}";
             throw new InvalidOperationException(
-                $"RFCOMM 连接失败（通道 {Channel}，WSA 错误 {err}）。请确认耳机已与 Windows 配对、" +
+                $"RFCOMM 连接失败（{target}，WSA 错误 {err}）。请确认耳机已与 Windows 配对、" +
                 "已开机且在范围内，且没有被其它设备独占控制通道。");
         }
 
