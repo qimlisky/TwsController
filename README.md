@@ -1,8 +1,11 @@
 # TwsController · WPF 版
 基于[vivotwscontrollerforwin11](https://github.com/NobleS205/vivotwscontrollerforwin11)的WPF版本  
-可前往release下载 
-运行环境：请安装[.NET 10](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)[x64](https://dotnet.microsoft.com/zh-cn/download/dotnet/thank-you/runtime-10.0.15-windows-x64-installer)|[x86](https://dotnet.microsoft.com/zh-cn/download/dotnet/thank-you/runtime-10.0.15-windows-x86-installer)|[Arm64](https://dotnet.microsoft.com/zh-cn/download/dotnet/thank-you/runtime-10.0.15-windows-arm64-installer)**运行时**或[开发环境生成应用-SDK](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)  
+可前往release下载  
+**运行环境**：请安装[.NET 10](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)|[x64](https://dotnet.microsoft.com/zh-cn/download/dotnet/thank-you/runtime-10.0.15-windows-x64-installer)|[x86](https://dotnet.microsoft.com/zh-cn/download/dotnet/thank-you/runtime-10.0.15-windows-x86-installer)|[Arm64](https://dotnet.microsoft.com/zh-cn/download/dotnet/thank-you/runtime-10.0.15-windows-arm64-installer)**运行时**或[.NET 10开发环境生成应用-SDK](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)  
 后台内存大约20mb左右，完全不连接大约10mb以内。  
+使用非打包应用  
+目前我只有红米buds4pro设备进行测试。也不知道其他设备能否正常使用。要是有什么问题可以反馈，反正是AI修。  
+> 本项目仅供学习，非官方功能，使用风险自负。
 # VivoPodsCC — vivo / iQOO 耳机 Windows 控制台
 
 一个仿 **Windows 11 控制中心** 风格的 vivo TWS 耳机控制面板：后台常驻系统托盘，
@@ -38,7 +41,6 @@
 
 | 能力 | 说明 |
 | --- | --- |
-| **打包成 EXE** | 内置 `VivoPodsCC.spec` 与 `build.bat`，双击一键生成 `dist\VivoPodsCC.exe`（单文件、无控制台窗口、目标机无需装 Python） |
 | **关闭行为可自定义** | 右上角 ✕ 与 Alt+F4 的行为可选「最小化到托盘（后台常驻）」或「直接退出程序」，托盘菜单与浮窗设置菜单里都能切换 |
 | **两态 UI** | 折叠态只显示「耳机电量 + 多设备连接」，点标题栏的 ⌄ / ⌃ 展开或收起；折叠时窗口高度自动收缩到内容高度 |
 | **多设备连接（双连）上线** | 折叠态直接列出耳机当前连接的多台设备及在线状态（使用中 / 已连接 / 未连接），数据来自协议 `0x0249 / 0x8249` |
@@ -59,27 +61,17 @@
 
 ## 快速开始（源码运行）
 
-需要 Windows 10 / 11 与 Python 3.9+（64 位）。
-
-```bat
-:: 1. 先在 Windows 设置里把耳机配对好（蓝牙开关打开、与手机断开连接）
-:: 2. 安装依赖
-pip install -r requirements.txt
-
-:: 3. 正常运行（托盘常驻）
-python app.py
-
-:: 4. 不连耳机先看界面：演示模式
-python app.py --demo
+需安装.NET 10 SDK  
 ```
-
-也可以双击 `run.bat`（首次自动安装依赖）。
-
-- 启动后若曾连接过耳机，会自动重连；首次启动弹出未连接卡片，点「选择 vivo / iQOO 耳机」。
-- 浮窗弹出方式：`Ctrl + Alt + V`、左键点托盘图标、或按 `Win + A`（默认开启跟随）。
-- 托盘右键菜单可切换深浅色、开机自启、进入演示模式、选择设备、
-  **关闭按钮行为**、**是否跟随系统控制中心**。
-- 浮窗标题栏的 ⌄ / ⌃ 可切换**折叠 / 展开**两态：折叠态只显示耳机电量与多设备连接。
+cd \TwsController\wpf
+dotnet publish .\src\PodsController.Wpf\PodsController.Wpf.csproj ^
+  -c Release ^
+  -r win-x64 ^
+  --self-contained false ^
+  -p:Platform=x64 ^
+  -o .\dist\win-x64
+```
+或者使用GitHub Action构建
 
 ## 真机连接要点
 
@@ -92,33 +84,7 @@ python app.py --demo
 4. 若配对后设备列表为空：程序默认用 `BluetoothFindFirstDevice` API 枚举（免管理员）；
    个别精简系统该 API 不可用时会回退读注册表，若提示权限不足，可用管理员身份运行一次。
 
-## 打包成 EXE（一键）
 
-```bat
-:: 在项目根目录双击，或命令行执行\.build.bat
-```
-
-脚本会自动完成三步：① 安装 PySide6 → ② 安装 / 更新 PyInstaller（≥6.0）
-→ ③ 按 `VivoPodsCC.spec` 打包，产物为 **`dist\VivoPodsCC.exe`**
-（单文件、64 位、无控制台窗口）。
-
-- 目标机**无需安装 Python**，双击 exe 即可运行；
-- 托盘菜单的「开机自启动」在 EXE 模式下写入 exe 自身路径到
-  当前用户 `HKCU\...\Run`（不需要管理员）；
-- 手动打包等价于：`pyinstaller --noconfirm --clean VivoPodsCC.spec`。
-
-> 注意：请用 **64 位 Python** 打包。`bthprops.cpl` / `ws2_32.dll` 是系统组件、
-> 不需要打包，但 exe 必须是 64 位才能正常调用蓝牙接口。
-
-## 工作原理（简版）
-
-- `vivo/vivo_protocol.py`：GAIA 风格私有协议帧的编解码（握手、注册、电量、降噪、
-  EQ、空间音频、查找、佩戴、固件、时间同步等），与真机抓包字节逐一对齐。
-- `vivo/transport.py`：纯 ctypes 调 `ws2_32.dll` 建立 RFCOMM 连接，零第三方蓝牙库；
-  `bthprops.cpl` 枚举已配对设备。
-- `vivo/controller.py`：后台线程负责连接、初始化、读循环与命令发送，通过 Qt 信号更新 UI。
-- `ui/`：PySide6 无边框圆角亚克力浮窗（`flyout.py`）、Win11 Fluent 风格 QSS、
-  全局热键与低级键盘钩子（只观察 `Win+A`、不拦截系统按键）。
 
 ## 无硬件自测
 
