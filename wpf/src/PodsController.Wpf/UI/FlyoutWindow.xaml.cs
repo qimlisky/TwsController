@@ -377,8 +377,8 @@ public partial class FlyoutWindow : Window
         _aboutOpen = true;
         AboutPanel.Visibility = Visibility.Visible;
         FoldButton.Visibility = Visibility.Collapsed;
-        // 等关于页完成一次布局后再测高，避免沿用上一个面板的高度。
-        Dispatcher.BeginInvoke(new Action(() => ResizeToContent(animate: false)), DispatcherPriority.Background);
+        // 等关于页完成一次布局后再测高，按底边锚定向上展开。
+        Dispatcher.BeginInvoke(new Action(() => ResizeToContent(animate: true)), DispatcherPriority.Background);
     }
 
     private void HideAbout()
@@ -386,7 +386,8 @@ public partial class FlyoutWindow : Window
         _aboutOpen = false;
         AboutPanel.Visibility = Visibility.Collapsed;
         FoldButton.Visibility = Visibility.Visible;
-        ScheduleAdaptiveHeight();
+        // 返回主面板时同样按底边锚定收缩，避免只改高度、顶边不动造成窗口往下长。
+        Dispatcher.BeginInvoke(new Action(() => ResizeToContent(animate: true)), DispatcherPriority.Background);
     }
 
     private void ThemeButton_Click(object sender, RoutedEventArgs e)
@@ -888,10 +889,10 @@ public partial class FlyoutWindow : Window
             return;
         }
 
-        // 保持底边贴边：高度变化时只改 Top，不改变窗口的下沿位置。
-        // 以当前下沿为基准向上计算，并限制在屏幕工作区内，避免底部内容被顶出屏幕。
-        var bottom = Math.Min(work.Bottom - BottomGap,
-            Math.Max(work.Top + target, Top + Height));
+        // 保持底边贴边：以当前下沿为基准向上计算，高度变大时只上移 Top。
+        // 只有上方空间不足、Top 会超出工作区时才贴到顶边。
+        var currentBottom = Top + Height;
+        var bottom = Math.Min(work.Bottom - BottomGap, currentBottom);
         Height = target;
         if (IsVisible && !double.IsNaN(bottom))
         {
