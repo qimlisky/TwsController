@@ -6,32 +6,23 @@ on:
       - "v*"
   workflow_dispatch:
     inputs:
-      bump:
-        description: "Version bump"
-        required: true
-        default: patch
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-      confirm_major:
-        description: "Confirm a MAJOR release (required when bump=major)"
+      tag:
+        description: "Release tag to publish (e.g. v1.0.0). Leave empty to build artifacts only."
         required: false
-        default: false
-        type: boolean
+        type: string
 
 permissions:
   contents: write
 
 jobs:
-  prepare:
-    name: Resolve and validate version
+  validate:
+    name: Validate release tag
     runs-on: ubuntu-latest
 
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
+      release: ${{ steps.version.outputs.release }}
       sha: ${{ steps.version.outputs.sha }}
 
     steps:
@@ -56,89 +47,40 @@ jobs:
 
           if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
             TAG="$GITHUB_REF_NAME"
-            VERSION="${TAG#v}"
-            if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              echo "::error::Tag must look like v1.2.3, got: '$TAG'"
-              exit 1
-            fi
-            if [[ "$VERSION" != "$CODE" ]]; then
-              echo "::error::Tag version '$VERSION' does not match AppMeta.AppVersion '$CODE'"
-              exit 1
-            fi
-            MODE=tag
-            SHA=$(git rev-parse HEAD)
+            RELEASE=true
           else
-            BUMP="${{ inputs.bump }}"
-            if [[ "$BUMP" == "major" && "${{ inputs.confirm_major }}" != "true" ]]; then
-              echo "::error::MAJOR release requires confirm_major=true"
+            TAG="${{ inputs.tag }}"
+            if [[ -z "$TAG" ]]; then
+              TAG="v$CODE"
+              RELEASE=false
+            else
+              RELEASE=true
+            fi
+          fi
+
+          if [[ "$RELEASE" == "true" ]]; then
+            if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Release tag must look like v1.2.3, got: '$TAG'"
               exit 1
             fi
-            if [[ "$BUMP" != "patch" && "$BUMP" != "minor" && "$BUMP" != "major" ]]; then
-              echo "::error::Unknown bump type: '$BUMP'"
+            VERSION="${TAG#v}"
+            if [[ "$VERSION" != "$CODE" ]]; then
+              echo "::error::Tag '$TAG' does not match AppMeta.AppVersion '$CODE'"
               exit 1
             fi
-
-            # 以代码版本为基准递增；MANUAL 发布必须高于现有最新 tag。
-            IFS=. read -r MAJOR MINOR PATCH <<< "$CODE"
-            case "$BUMP" in
-              patch) PATCH=$((PATCH + 1)) ;;
-              minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-              major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-            esac
-            VERSION="$MAJOR.$MINOR.$PATCH"
-            TAG="v$VERSION"
-
-            LATEST_TAG=$(git tag --list 'v*' --sort=-version:refname | head -n 1 || true)
-            if [[ -n "$LATEST_TAG" ]]; then
-              LATEST_VERSION="${LATEST_TAG#v}"
-              if [[ "$LATEST_VERSION" == "$VERSION" ]] || \
-                 [[ "$(printf '%s\n%s\n' "$LATEST_VERSION" "$VERSION" | sort -V | tail -n 1)" != "$VERSION" ]]; then
-                echo "::error::New version '$VERSION' must be greater than latest tag '$LATEST_TAG'"
-                exit 1
-              fi
-            fi
-
-            python3 - "$FILE" "$VERSION" <<'PY'
-            import re
-            import sys
-            from pathlib import Path
-
-            path, version = sys.argv[1], sys.argv[2]
-            text = Path(path).read_text(encoding="utf-8")
-            new_text, count = re.subn(
-                r'(public const string AppVersion\s*=\s*")[^"]*(")',
-                rf'\g<1>{version}\g<2>',
-                text,
-                count=1,
-            )
-            if count != 1:
-                raise SystemExit("AppVersion declaration not found")
-            Path(path).write_text(new_text, encoding="utf-8")
-            PY
-
-            CODE_AFTER=$(sed -n 's/.*public const string AppVersion = "\([^"]*\)".*/\1/p' "$FILE" | head -n 1)
-            if [[ "$CODE_AFTER" != "$VERSION" ]]; then
-              echo "::error::Failed to update AppMeta.AppVersion to '$VERSION'"
-              exit 1
-            fi
-
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add "$FILE"
-            git commit -m "chore(release): v$VERSION [skip ci]"
-            git push origin "HEAD:main"
-            SHA=$(git rev-parse HEAD)
-            MODE=manual
+          else
+            VERSION="$CODE"
           fi
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          echo "Resolved version=$VERSION tag=$TAG mode=$MODE sha=$SHA"
+          echo "release=$RELEASE" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "Version=$VERSION tag=$TAG release=$RELEASE"
 
   build:
     name: Build ${{ matrix.arch }}
-    needs: prepare
+    needs: validate
     runs-on: windows-latest
 
     strategy:
@@ -156,7 +98,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.prepare.outputs.sha }}
+          ref: ${{ needs.validate.outputs.sha }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -189,7 +131,8 @@ jobs:
 
   release:
     name: Publish GitHub Release
-    needs: [prepare, build]
+    needs: [validate, build]
+    if: needs.validate.outputs.release == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -209,15 +152,15 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.prepare.outputs.tag }}
-          target_commitish: ${{ needs.prepare.outputs.sha }}
-          name: TwsController ${{ needs.prepare.outputs.tag }}
+          tag_name: ${{ needs.validate.outputs.tag }}
+          target_commitish: ${{ needs.validate.outputs.sha }}
+          name: TwsController ${{ needs.validate.outputs.tag }}
           generate_release_notes: true
           files: |
             release/*.zip
             release/SHA256SUMS.txt
           body: |
-            TwsController ${{ needs.prepare.outputs.version }} Windows build.
+            TwsController ${{ needs.validate.outputs.version }} Windows build.
 
             Requirements: .NET 10 Desktop Runtime (x64 or ARM64).
             Download the zip matching your CPU architecture, extract it, and run `TwsController.exe`.

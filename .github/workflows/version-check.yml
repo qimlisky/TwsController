@@ -1,0 +1,54 @@
+name: Version Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Validate AppMeta version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check version format and release state
+        shell: bash
+        env:
+          FILE: wpf/src/PodsController.Wpf/Core/AppMeta.cs
+        run: |
+          set -euo pipefail
+
+          CODE=$(sed -n 's/.*public const string AppVersion = "\([^"]*\)".*/\1/p' "$FILE" | head -n 1)
+          if [[ ! "$CODE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::AppMeta.AppVersion must be MAJOR.MINOR.PATCH, got: '$CODE'"
+            exit 1
+          fi
+
+          LATEST_TAG=$(git tag --list 'v*' --sort=-version:refname | head -n 1 || true)
+          if [[ -n "$LATEST_TAG" ]]; then
+            LATEST_VERSION="${LATEST_TAG#v}"
+            if [[ "$LATEST_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              if [[ "$(printf '%s\n%s\n' "$LATEST_VERSION" "$CODE" | sort -V | tail -n 1)" == "$LATEST_VERSION" ]]; then
+                echo "::error::AppVersion '$CODE' is not newer than latest release '$LATEST_TAG'; bump the version."
+                exit 1
+              fi
+            fi
+          fi
+
+          echo "AppVersion $CODE is valid."
+          {
+            echo "### Version Check"
+            echo ""
+            echo "- AppVersion: \`$CODE\`"
+            echo "- Latest tag: \`${LATEST_TAG:-none}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
