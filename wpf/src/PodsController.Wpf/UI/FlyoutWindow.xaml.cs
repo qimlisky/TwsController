@@ -26,7 +26,7 @@ public partial class FlyoutWindow : Window
 {
     private const double PanelWidth = 372;
     private const double PanelHeight = 540;
-    private const double CollapsedMinHeight = 180;
+    private const double CollapsedMinHeight = 200;
     private const double ExpandedMinHeight = 280;
     private const double EdgeGap = 8;
     private const double BottomGap = 16;
@@ -747,7 +747,20 @@ public partial class FlyoutWindow : Window
             TitleBar.Measure(new Size(contentWidth, double.PositiveInfinity));
 
             double body;
-            if (ContentScroll.Visibility == Visibility.Visible)
+            if (collapsed)
+            {
+                // 折叠态只保留电量卡片和紧凑降噪；不要再用展开态的 BodyStack / ExtentHeight，
+                // 否则会把之前 540 高的视口当成内容高度，底部留出一大块空白。
+                body = 0;
+                BatteryGrid.Measure(new Size(contentWidth, double.PositiveInfinity));
+                body += BatteryGrid.DesiredSize.Height;
+                if (CompactNoiseSeg.Visibility == Visibility.Visible)
+                {
+                    CompactNoiseSeg.Measure(new Size(contentWidth, double.PositiveInfinity));
+                    body += CompactNoiseSeg.DesiredSize.Height;
+                }
+            }
+            else if (ContentScroll.Visibility == Visibility.Visible)
             {
                 BodyStack.Measure(new Size(contentWidth, double.PositiveInfinity));
                 body = BodyStack.DesiredSize.Height;
