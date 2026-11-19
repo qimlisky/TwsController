@@ -129,6 +129,7 @@ public sealed class AppHost
         {
             if (id == 1) OnUi(() => _flyout.ToggleFlyout());
         };
+        _messageWindow.TrayLeftDown += () => OnUi(() => _flyout.NotifyTrayClickDown());
         _messageWindow.TaskbarCreated += () => OnUi(() =>
         {
             AppLog.Taskbar("Explorer 重建任务栏，重挂托盘图标");
@@ -348,7 +349,7 @@ public sealed class AppHost
 
     private void WireTray()
     {
-        _tray.ShowRequested += () => OnUi(() => _flyout.ShowFlyout("tray"));
+        _tray.ShowRequested += () => OnUi(() => _flyout.ToggleFlyoutFromTray());
         _tray.DemoRequested += vendor => OnUi(() => ConnectDemo(vendor));
         _tray.AutoDetectToggled += enabled => OnUi(() =>
         {

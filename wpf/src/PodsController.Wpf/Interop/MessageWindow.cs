@@ -26,6 +26,7 @@ public sealed class MessageWindow : IDisposable
 
     public uint TrayMessage => _trayMessage;
 
+    public event Action? TrayLeftDown;
     public event Action? TrayLeftClick;
     public event Action? TrayRightClick;
     public event Action? TaskbarCreated;
@@ -120,7 +121,8 @@ public sealed class MessageWindow : IDisposable
             case Native.WM_TRAYICON:
             {
                 var notification = (uint)lParam & 0xFFFF;
-                if (notification == Native.WM_LBUTTONUP) TrayLeftClick?.Invoke();
+                if (notification == Native.WM_LBUTTONDOWN) TrayLeftDown?.Invoke();
+                else if (notification == Native.WM_LBUTTONUP) TrayLeftClick?.Invoke();
                 else if (notification == Native.WM_RBUTTONUP) TrayRightClick?.Invoke();
                 return IntPtr.Zero;
             }

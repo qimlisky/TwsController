@@ -48,6 +48,8 @@ public partial class FlyoutWindow : Window
     private bool _pinned;
     private bool _collapsed;
     private bool _adaptivePending;
+    private DateTime _trayClickDownAt = DateTime.MinValue;
+    private DateTime _lastHiddenAt = DateTime.MinValue;
     private bool _autoShown;
     private bool _autoHideArmed;
     private bool _menuOpen;
@@ -184,6 +186,7 @@ public partial class FlyoutWindow : Window
         _autoHideArmed = false;
         StopAutoHide();
         if (!IsVisible) return;
+        _lastHiddenAt = DateTime.UtcNow;
 
         _animating = true;
         var work = WorkArea();
@@ -208,6 +211,24 @@ public partial class FlyoutWindow : Window
         if (IsVisible && Opacity > 0.5) HideFlyout("hotkey");
         else ShowFlyout("manual");
     }
+
+    /// <summary>托盘左键：第一次打开，再次点击关闭；不要走“点外面自动收起”的路径。</summary>
+    public void ToggleFlyoutFromTray()
+    {
+        _trayClickDownAt = DateTime.UtcNow;
+        // 同一次托盘点击可能已经先被 outside 检测收起；短窗口内视为“这次是要关闭”，
+        // 不要又把它重新打开。
+        var recentlyHidden = (DateTime.UtcNow - _lastHiddenAt).TotalMilliseconds < 350;
+        if (IsVisible || recentlyHidden)
+        {
+            HideFlyout("tray");
+            return;
+        }
+        ShowFlyout("tray");
+    }
+
+    /// <summary>托盘左键按下时调用，给 outside 检测一个短冷却，避免同一次点击先收后开。</summary>
+    public void NotifyTrayClickDown() => _trayClickDownAt = DateTime.UtcNow;
 
     public void ShowAfterWinA() => ShowFlyout("win+a");
 
@@ -483,6 +504,7 @@ public partial class FlyoutWindow : Window
     {
         if (!IsVisible || _pinned || _menuOpen || _animating) return;
         if ((DateTime.UtcNow - _shownAt).TotalMilliseconds < 800) return;
+        if ((DateTime.UtcNow - _trayClickDownAt).TotalMilliseconds < 700) return;
 
         try
         {

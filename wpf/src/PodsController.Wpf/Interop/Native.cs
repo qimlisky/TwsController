@@ -32,6 +32,7 @@ internal static class Native
     public const uint WM_DESTROY = 0x0002;
     public const uint WM_COMMAND = 0x0111;
     public const uint WM_LBUTTONUP = 0x0202;
+    public const uint WM_LBUTTONDOWN = 0x0201;
     public const uint WM_RBUTTONUP = 0x0205;
 
     public const uint PBT_APMRESUMEAUTOMATIC = 0x0012;
