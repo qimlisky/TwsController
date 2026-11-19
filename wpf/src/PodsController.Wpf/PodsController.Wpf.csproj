@@ -29,6 +29,7 @@
   <ItemGroup>
     <Content Include="..\..\assets\*.png" Link="assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\assets\*.ico" Link="assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\..\THIRD_PARTY_NOTICES.md" Link="THIRD_PARTY_NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
