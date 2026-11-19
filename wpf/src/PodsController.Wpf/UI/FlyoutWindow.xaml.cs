@@ -519,10 +519,7 @@ public partial class FlyoutWindow : Window
     // ------------------------------------------------------------------ //
     private void CreateTimers()
     {
-        _outsideTimer = new DispatcherTimer(DispatcherPriority.Input)
-        {
-            Interval = TimeSpan.FromMilliseconds(30)
-        };
+        _outsideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _outsideTimer.Tick += (_, _) => CheckOutside();
         _outsideTimer.Start();
 

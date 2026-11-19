@@ -318,7 +318,7 @@ public sealed class TrayIcon : IDisposable
         StopOutsideWatch();
         var timer = new DispatcherTimer(DispatcherPriority.Input)
         {
-            Interval = TimeSpan.FromMilliseconds(15)
+            Interval = TimeSpan.FromMilliseconds(40)
         };
         timer.Tick += (_, _) =>
         {
