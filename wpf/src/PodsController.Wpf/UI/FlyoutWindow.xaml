@@ -18,11 +18,6 @@
             Background="{DynamicResource RootBrush}"
             BorderBrush="{DynamicResource StrokeBrush}"
             BorderThickness="1">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="24" ShadowDepth="4" Direction="270" Opacity="0.55"
-                              Color="{DynamicResource ShadowColor}" />
-        </Border.Effect>
-
         <Border Padding="12,10,12,12">
             <Grid>
                 <Grid.RowDefinitions>

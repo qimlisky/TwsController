@@ -395,23 +395,14 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="{x:Type ContextMenu}">
-                            <!-- 阴影只作用在背景层，避免 DropShadowEffect 把文字一起栅格化 -->
-                            <Grid Margin="10" MinWidth="196">
-                                <Border Background="{DynamicResource MenuBrush}" CornerRadius="9">
-                                    <Border.Effect>
-                                        <DropShadowEffect BlurRadius="18" ShadowDepth="2" Direction="270"
-                                                          Opacity="0.35" Color="{DynamicResource ShadowColor}" />
-                                    </Border.Effect>
-                                </Border>
-                                <Border Background="{TemplateBinding Background}"
-                                        BorderBrush="{DynamicResource MenuStrokeBrush}"
-                                        BorderThickness="1" CornerRadius="9"
-                                        Padding="{TemplateBinding Padding}"
-                                        SnapsToDevicePixels="True">
-                                    <StackPanel IsItemsHost="True"
-                                                KeyboardNavigation.DirectionalNavigation="Contained" />
-                                </Border>
-                            </Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{DynamicResource MenuStrokeBrush}"
+                                    BorderThickness="1" CornerRadius="9"
+                                    Padding="{TemplateBinding Padding}" MinWidth="196"
+                                    SnapsToDevicePixels="True">
+                                <StackPanel IsItemsHost="True"
+                                            KeyboardNavigation.DirectionalNavigation="Contained" />
+                            </Border>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
@@ -463,20 +454,12 @@
                                 <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="4"
                                        IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
                                        AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
-                                    <Grid Margin="10" MinWidth="186">
-                                        <Border Background="{DynamicResource MenuBrush}" CornerRadius="9">
-                                            <Border.Effect>
-                                                <DropShadowEffect BlurRadius="18" ShadowDepth="2" Direction="270"
-                                                                  Opacity="0.35" Color="{DynamicResource ShadowColor}" />
-                                            </Border.Effect>
-                                        </Border>
-                                        <Border Background="{DynamicResource MenuBrush}"
-                                                BorderBrush="{DynamicResource MenuStrokeBrush}"
-                                                BorderThickness="1" CornerRadius="9"
-                                                Padding="5" SnapsToDevicePixels="True">
-                                            <StackPanel IsItemsHost="True" />
-                                        </Border>
-                                    </Grid>
+                                    <Border Background="{DynamicResource MenuBrush}"
+                                            BorderBrush="{DynamicResource MenuStrokeBrush}"
+                                            BorderThickness="1" CornerRadius="9"
+                                            Padding="5" MinWidth="186" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" />
+                                    </Border>
                                 </Popup>
                             </Grid>
 
