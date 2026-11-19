@@ -29,6 +29,7 @@ public partial class FlyoutWindow : Window
     private const double CollapsedMinHeight = 180;
     private const double ExpandedMinHeight = 280;
     private const double EdgeGap = 8;
+    private const double BottomGap = 16;
     private const int SlideMs = 300;
     private const int CollapseMs = 200;
     private const int ToastMs = 2600;
@@ -137,7 +138,7 @@ public partial class FlyoutWindow : Window
         if (IsVisible)
         {
             _animating = true;
-            var anchor = WorkArea().Bottom - Height - EdgeGap;
+            var anchor = WorkArea().Bottom - Height - BottomGap;
             AnimateTop(Top, anchor, SlideMs, FinishShowAnimation);
             BeginAnimation(OpacityProperty, new DoubleAnimation(Opacity, 1, TimeSpan.FromMilliseconds(SlideMs))
             {
@@ -164,7 +165,7 @@ public partial class FlyoutWindow : Window
         Activate();
         Topmost = true;
 
-        var targetTop = work.Bottom - Height - EdgeGap;
+        var targetTop = work.Bottom - Height - BottomGap;
         AnimateTop(Top, targetTop, SlideMs, FinishShowAnimation);
         BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(SlideMs))
         {
@@ -254,7 +255,7 @@ public partial class FlyoutWindow : Window
         {
             var work = WorkArea();
             var left = work.Right - Width - EdgeGap;
-            var top = work.Bottom - Height - EdgeGap;
+            var top = work.Bottom - Height - BottomGap;
             Left = Math.Max(work.Left, left);
             Top = Math.Max(work.Top, top);
         }
@@ -271,7 +272,7 @@ public partial class FlyoutWindow : Window
         {
             if (!IsVisible || double.IsNaN(Top)) return;
             var work = WorkArea();
-            Top = Math.Max(work.Top, work.Bottom - Height - EdgeGap);
+            Top = Math.Max(work.Top, work.Bottom - Height - BottomGap);
         }
         catch
         {
@@ -362,7 +363,7 @@ public partial class FlyoutWindow : Window
 
         var target = MeasureWindowHeight(collapsed);
         var work = WorkArea();
-        var targetTop = work.Bottom - target - EdgeGap;
+        var targetTop = work.Bottom - target - BottomGap;
 
         if (animate && IsVisible)
         {
@@ -724,11 +725,10 @@ public partial class FlyoutWindow : Window
             {
                 BodyStack.Measure(new Size(contentWidth, double.PositiveInfinity));
                 body = BodyStack.DesiredSize.Height;
-                // ScrollViewer 的实际内容高度比 DesiredSize 更可靠，避免底部功能被少算。
-                if (ContentScroll.ExtentHeight > 0)
+                // 只有内容真的超出视口、出现滚动时，ExtentHeight 才是完整内容高度；
+                // 内容不足一屏时它会等于视口高度，直接取会把窗口撑出大块空白。
+                if (ContentScroll.ScrollableHeight > 0)
                     body = Math.Max(body, ContentScroll.ExtentHeight);
-                if (BodyStack.ActualHeight > 0)
-                    body = Math.Max(body, BodyStack.ActualHeight);
             }
             else if (EmptySection.Visibility == Visibility.Visible)
             {
@@ -781,7 +781,7 @@ public partial class FlyoutWindow : Window
         if (animate && IsVisible)
         {
             _animating = true;
-            var topTarget = Math.Max(work.Top, work.Bottom - target - EdgeGap);
+            var topTarget = Math.Max(work.Top, work.Bottom - target - BottomGap);
             var heightAnim = new DoubleAnimation(Height, target, TimeSpan.FromMilliseconds(CollapseMs))
             {
                 EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
@@ -800,7 +800,7 @@ public partial class FlyoutWindow : Window
 
         // 保持底边贴边：高度变化时只改 Top，不改变窗口的下沿位置。
         // 以当前下沿为基准向上计算，并限制在屏幕工作区内，避免底部内容被顶出屏幕。
-        var bottom = Math.Min(work.Bottom - EdgeGap,
+        var bottom = Math.Min(work.Bottom - BottomGap,
             Math.Max(work.Top + target, Top + Height));
         Height = target;
         if (IsVisible && !double.IsNaN(bottom))

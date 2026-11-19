@@ -8,6 +8,7 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True"
         WindowStartupLocation="Manual"
+        VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch"
         FontFamily="Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI" FontSize="12.5"
         Foreground="{DynamicResource TextBrush}"
         TextOptions.TextFormattingMode="Display"
