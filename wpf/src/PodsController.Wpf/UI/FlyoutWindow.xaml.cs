@@ -178,6 +178,8 @@ public partial class FlyoutWindow : Window
             Hide();
             Opacity = 1;
             _animating = false;
+            // 收起后如果 3 秒内没有被重新打开，做一次空闲内存回收。
+            MemoryTrim.Schedule(() => !IsVisible);
         });
         BeginAnimation(OpacityProperty, new DoubleAnimation(Opacity, 0, TimeSpan.FromMilliseconds(SlideMs))
         {
@@ -552,6 +554,8 @@ public partial class FlyoutWindow : Window
                 image.BeginInit();
                 image.CacheOption = BitmapCacheOption.OnLoad;
                 image.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                // 界面里最大只显示到 72px，按 160px 解码，避免把 512px 原图常驻内存。
+                image.DecodePixelWidth = 160;
                 image.UriSource = new Uri(path);
                 image.EndInit();
                 image.Freeze();
