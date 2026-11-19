@@ -1,8 +1,11 @@
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Interop;
+using System.Windows.Threading;
 
 using Microsoft.Win32;
 
@@ -52,6 +55,7 @@ public sealed class TrayIcon : IDisposable
     private string _iconFile = "";
     private string _tooltip = AppMeta.AppName;
     private ContextMenu? _openMenu;
+    private DispatcherTimer? _menuWatch;
 
     public TrayIcon(MessageWindow window)
     {
@@ -272,12 +276,124 @@ public sealed class TrayIcon : IDisposable
 
         try { Native.SetForegroundWindow(_window.Handle); } catch { /* 忽略 */ }
         _openMenu = menu;
+        menu.StaysOpen = false;
+        menu.Opened += (_, _) =>
+        {
+            ActivatePopup(menu);
+            StartOutsideWatch(menu);
+        };
         menu.Closed += (_, _) =>
         {
+            StopOutsideWatch();
             if (ReferenceEquals(_openMenu, menu)) _openMenu = null;
         };
         menu.Placement = PlacementMode.MousePoint;
         menu.IsOpen = true;
+    }
+
+    /// <summary>WPF Popup 从托盘图标打开时经常没有前台激活，先激活它，外部点击才会走系统关闭逻辑。</summary>
+    private static void ActivatePopup(ContextMenu menu)
+    {
+        try
+        {
+            if (PresentationSource.FromVisual(menu) is HwndSource source && source.Handle != IntPtr.Zero)
+            {
+                Native.SetForegroundWindow(source.Handle);
+            }
+        }
+        catch
+        {
+            // 忽略：还有下面的轮询兜底
+        }
+    }
+
+    /// <summary>
+    /// 兜底：托盘右键菜单不是从窗口内打开，部分系统上点别处不会自动关。
+    /// 菜单打开期间轻量轮询鼠标键，点到菜单矩形外就关掉；点菜单内不干扰命中。
+    /// </summary>
+    private void StartOutsideWatch(ContextMenu menu)
+    {
+        StopOutsideWatch();
+        var timer = new DispatcherTimer(DispatcherPriority.Input)
+        {
+            Interval = TimeSpan.FromMilliseconds(40)
+        };
+        timer.Tick += (_, _) =>
+        {
+            if (!menu.IsOpen)
+            {
+                StopOutsideWatch();
+                return;
+            }
+            if (!AnyMouseDown()) return;
+            if (!CursorInsideAny(menu)) menu.IsOpen = false;
+        };
+        _menuWatch = timer;
+        timer.Start();
+    }
+
+    private void StopOutsideWatch()
+    {
+        if (_menuWatch is null) return;
+        try { _menuWatch.Stop(); } catch { /* 忽略 */ }
+        _menuWatch = null;
+    }
+
+    private static bool AnyMouseDown() =>
+        (Native.GetAsyncKeyState(0x01) & 0x8000) != 0 ||   // 左键
+        (Native.GetAsyncKeyState(0x02) & 0x8000) != 0 ||   // 右键
+        (Native.GetAsyncKeyState(0x04) & 0x8000) != 0;     // 中键
+
+    private static bool CursorInsideAny(ContextMenu menu)
+    {
+        if (CursorInside(menu)) return true;
+        // 子菜单是独立 Popup，光标可能已经离开主菜单矩形，不能误关。
+        foreach (var item in menu.Items.OfType<MenuItem>())
+        {
+            if (item.IsSubmenuOpen && CursorInsidePopup(item)) return true;
+        }
+        return false;
+    }
+
+    private static bool CursorInsidePopup(MenuItem item)
+    {
+        try
+        {
+            if (item.Template?.FindName("PART_Popup", item) is not Popup popup) return false;
+            if (popup.Child is not FrameworkElement child) return false;
+            if (PresentationSource.FromVisual(child) is not HwndSource source || source.Handle == IntPtr.Zero) return false;
+            if (!Native.GetCursorPos(out var cursor) || !Native.GetWindowRect(source.Handle, out var rect)) return false;
+            return cursor.X >= rect.Left && cursor.X <= rect.Right &&
+                   cursor.Y >= rect.Top && cursor.Y <= rect.Bottom;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool CursorInside(ContextMenu menu)
+    {
+        if (!Native.GetCursorPos(out var cursor)) return true;
+        try
+        {
+            // 用 Popup 的实际窗口矩形判断，避免 PointToScreen 与 125% DPI 的换算误差。
+            if (PresentationSource.FromVisual(menu) is HwndSource source && source.Handle != IntPtr.Zero &&
+                Native.GetWindowRect(source.Handle, out var rect))
+            {
+                return cursor.X >= rect.Left && cursor.X <= rect.Right &&
+                       cursor.Y >= rect.Top && cursor.Y <= rect.Bottom;
+            }
+
+            var topLeft = menu.PointToScreen(new System.Windows.Point(0, 0));
+            var bottomRight = menu.PointToScreen(new System.Windows.Point(menu.ActualWidth, menu.ActualHeight));
+            return cursor.X >= topLeft.X && cursor.X <= bottomRight.X &&
+                   cursor.Y >= topLeft.Y && cursor.Y <= bottomRight.Y;
+        }
+        catch
+        {
+            return true;
+        }
     }
 
     private static MenuItem TrayItem(string header, Action action, bool? check = null)
@@ -396,6 +512,8 @@ public sealed class TrayIcon : IDisposable
 
     public void Dispose()
     {
+        StopOutsideWatch();
+        try { _openMenu?.SetCurrentValue(ContextMenu.IsOpenProperty, false); } catch { /* 忽略 */ }
         Remove();
         if (_icon != IntPtr.Zero)
         {
