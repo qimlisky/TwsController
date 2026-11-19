@@ -1,6 +1,6 @@
 # TwsController · WPF 版
 
-显示名：`TwsController`；工程名 / 程序集名保持不变：`PodsController.Wpf`（解决方案 `PodsController.Wpf.sln`），输出仍是 `PodsController.Wpf.exe`。
+显示名 / 进程名：`TwsController`；工程文件夹和命名空间仍是 `PodsController.Wpf` / `PodsController`（解决方案 `PodsController.Wpf.sln`），输出 `TwsController.exe`。
 运行时标识仍沿用 Python 版：配置目录 `%APPDATA%\VivoPodsCC`、日志 `<程序目录>\log`、
 单实例名 `Local\VivoPodsCC.*`、快捷方式「TwsController」，两边可共用同一份配置。
 
@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | 目标框架 | `net10.0-windows` | 需要 .NET 10 SDK（含 Windows Desktop） |
 | UI 框架 | **WPF**（`UseWPF=true`） | 不依赖 Windows App SDK / WinUI 运行时 |
-| 打包 | 非打包（普通 exe） | 双击 `PodsController.Wpf.exe` 直接跑 |
+| 打包 | 非打包（普通 exe） | 双击 `TwsController.exe` 直接跑 |
 | .NET 运行时 | `SelfContained=false` | 目标机装 .NET 10 Desktop Runtime 即可 |
 | 平台 | x64 / ARM64 | 不支持 AnyCPU |
 
@@ -113,15 +113,15 @@ wpf/
 ```powershell
 dotnet build .\wpf\PodsController.Wpf.sln -c Release -p:Platform=x64
 
-.\wpf\src\PodsController.Wpf\bin\x64\Release\net10.0-windows\PodsController.Wpf.exe
+.\wpf\src\PodsController.Wpf\bin\x64\Release\net10.0-windows\TwsController.exe
 ```
 
 演示模式（不用真机看界面）：
 
 ```powershell
-.\PodsController.Wpf.exe --demo            # vivo
-.\PodsController.Wpf.exe --demo=huawei     # 华为 FreeBuds Pro 5
-.\PodsController.Wpf.exe --demo=oppo       # OPPO Enco X4
+.\TwsController.exe --demo            # vivo
+.\TwsController.exe --demo=huawei     # 华为 FreeBuds Pro 5
+.\TwsController.exe --demo=oppo       # OPPO Enco X4
 ```
 
 `Platform` 必须显式给 `x64` 或 `ARM64`。

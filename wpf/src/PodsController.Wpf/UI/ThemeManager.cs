@@ -11,8 +11,8 @@ namespace PodsController.UI;
 /// </summary>
 public static class ThemeManager
 {
-    private const string LightUri = "pack://application:,,,/PodsController.Wpf;component/UI/Themes/Light.xaml";
-    private const string DarkUri = "pack://application:,,,/PodsController.Wpf;component/UI/Themes/Dark.xaml";
+    private const string LightUri = "pack://application:,,,/TwsController;component/UI/Themes/Light.xaml";
+    private const string DarkUri = "pack://application:,,,/TwsController;component/UI/Themes/Dark.xaml";
 
     public static bool IsDark { get; private set; }
 

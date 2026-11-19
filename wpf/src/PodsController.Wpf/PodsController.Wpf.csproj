@@ -5,7 +5,7 @@
     <OutputType>WinExe</OutputType>
     <UseWPF>true</UseWPF>
     <RootNamespace>PodsController</RootNamespace>
-    <AssemblyName>PodsController.Wpf</AssemblyName>
+    <AssemblyName>TwsController</AssemblyName>
     <AssemblyTitle>TwsController</AssemblyTitle>
     <Product>TwsController</Product>
     <Description>TwsController - vivo / 华为 / OPPO TWS 控制面板</Description>
