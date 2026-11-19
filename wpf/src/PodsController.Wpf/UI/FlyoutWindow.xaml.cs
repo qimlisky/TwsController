@@ -29,6 +29,7 @@ public partial class FlyoutWindow : Window
     private const double CollapsedMinHeight = 200;
     private const double ExpandedMinHeight = 280;
     private const double EmptyMinHeight = 220;
+    private const double AboutMinHeight = 320;
     private const double EdgeGap = 8;
     private const double BottomGap = 16;
     private const int SlideMs = 300;
@@ -51,6 +52,7 @@ public partial class FlyoutWindow : Window
     private bool _adaptivePending;
     private bool _pendingGrowUp;
     private bool _uiConnected;
+    private bool _aboutOpen;
     private DateTime _trayClickDownAt = DateTime.MinValue;
     private DateTime _lastHiddenAt = DateTime.MinValue;
     private bool _autoShown;
@@ -370,6 +372,23 @@ public partial class FlyoutWindow : Window
 
     private void FoldButton_Click(object sender, RoutedEventArgs e) => SetCollapsed(!_collapsed);
 
+    private void ShowAbout()
+    {
+        _aboutOpen = true;
+        AboutPanel.Visibility = Visibility.Visible;
+        FoldButton.Visibility = Visibility.Collapsed;
+        // 等关于页完成一次布局后再测高，避免沿用上一个面板的高度。
+        Dispatcher.BeginInvoke(new Action(() => ResizeToContent(animate: false)), DispatcherPriority.Background);
+    }
+
+    private void HideAbout()
+    {
+        _aboutOpen = false;
+        AboutPanel.Visibility = Visibility.Collapsed;
+        FoldButton.Visibility = Visibility.Visible;
+        ScheduleAdaptiveHeight();
+    }
+
     private void ThemeButton_Click(object sender, RoutedEventArgs e)
         => DarkThemeToggled?.Invoke(!_settings.GetBool("dark", true));
 
@@ -662,7 +681,7 @@ public partial class FlyoutWindow : Window
 
             EmptySection.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
             ContentScroll.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
-            FoldButton.Visibility = Visibility.Visible;
+            FoldButton.Visibility = _aboutOpen ? Visibility.Collapsed : Visibility.Visible;
 
             // 自动弹出的窗口，等真正连上后再重新给满 5 秒，避免连接成功瞬间就收起。
             if (connected && _autoShown && !_pinned && !_autoHideArmed)
@@ -760,7 +779,14 @@ public partial class FlyoutWindow : Window
             TitleBar.Measure(new Size(contentWidth, double.PositiveInfinity));
 
             double body;
-            if (EmptySection.Visibility == Visibility.Visible)
+            if (AboutPanel.Visibility == Visibility.Visible)
+            {
+                // 关于页比普通面板高，按关于页实际内容测高，避免底部文字被裁掉。
+                AboutPanel.InvalidateMeasure();
+                AboutPanel.Measure(new Size(contentWidth + 24, double.PositiveInfinity));
+                body = AboutPanel.DesiredSize.Height;
+            }
+            else if (EmptySection.Visibility == Visibility.Visible)
             {
                 // 未连接/连接失败时，空态不参与折叠后的电量紧凑布局；
                 // 折叠与展开都保持同一张空态卡片和同一高度。
@@ -806,11 +832,13 @@ public partial class FlyoutWindow : Window
             // root margin 16 + border 2 + padding 22 + 标题栏底边距 8 + 固件上边距 6
             // 折叠态底部不留内边距，只保留圆角外框的安全边距。
             var height = 16 + 2 + 10 + title + 8 + body + firmware + (collapsed ? 2 : 12);
-            var min = EmptySection.Visibility == Visibility.Visible
-                ? EmptyMinHeight
-                : collapsed
-                    ? CollapsedMinHeight
-                    : ExpandedMinHeight;
+            var min = AboutPanel.Visibility == Visibility.Visible
+                ? AboutMinHeight
+                : EmptySection.Visibility == Visibility.Visible
+                    ? EmptyMinHeight
+                    : collapsed
+                        ? CollapsedMinHeight
+                        : ExpandedMinHeight;
             var max = Math.Max(min, WorkArea().Height - 24);
             return Math.Clamp(height, min, max);
         }
@@ -1022,7 +1050,7 @@ public partial class FlyoutWindow : Window
     private void DemoHuawei_Click(object sender, RoutedEventArgs e) => DemoRequested?.Invoke(Vendor.Huawei);
     private void DemoOppo_Click(object sender, RoutedEventArgs e) => DemoRequested?.Invoke(Vendor.Oppo);
 
-    private void AboutBack_Click(object sender, RoutedEventArgs e) => AboutPanel.Visibility = Visibility.Collapsed;
+    private void AboutBack_Click(object sender, RoutedEventArgs e) => HideAbout();
 
     private void ConnectButton_Click(object sender, RoutedEventArgs e)
     {
@@ -1161,7 +1189,7 @@ public partial class FlyoutWindow : Window
         quit.Click += (_, _) => QuitRequested?.Invoke();
 
         var about = new MenuItem { Header = "关于" };
-        about.Click += (_, _) => AboutPanel.Visibility = Visibility.Visible;
+        about.Click += (_, _) => ShowAbout();
 
         menu.Items.Add(reconnect);
         menu.Items.Add(_miDevices);
