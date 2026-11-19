@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "wpf/**"
   pull_request:
+    paths:
+      - "wpf/**"
   workflow_dispatch:
 
 permissions:
