@@ -54,6 +54,15 @@ public sealed class DeviceHub
 
     public void ConnectDevice(DeviceInfo info)
     {
+        // 启动回退与自动接管可能在同一时刻各发一次；同一设备正在连接时不要重复建 RFCOMM 通道。
+        if (_session is not null
+            && !_session.State.Connected
+            && _session.State.Status.StartsWith("连接中", StringComparison.Ordinal)
+            && string.Equals(_session.Device.PlainMac, info.PlainMac, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
         if (info.IsDemo)
         {
             var demo = new DemoSession(info);
