@@ -12,10 +12,10 @@ public static class AppMeta
     public const string AppName = "TwsController";
 
     /// <summary>对外展示的软件版本（关于页第一行：软件版本 V11.45.85）。</summary>
-    public const string AppVersion = "11.45.85";
+    public const string AppVersion = "1.0";
 
     /// <summary>关于页第二行。</summary>
-    public const string AppAuthor = "芝士火腿肠拌饭";
+    public const string AppAuthor = "qimlisky";
 
     public static string VersionText => $"软件版本 V{AppVersion}";
 
