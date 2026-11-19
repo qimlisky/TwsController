@@ -44,3 +44,6 @@ desktop.ini
 
 # 开发过程中的面板截图（发布时不需要；要展示请放 docs/screenshots/）
 tests/*.png
+
+# WPF README 仅在本地保留，不纳入版本库
+wpf/README.md
