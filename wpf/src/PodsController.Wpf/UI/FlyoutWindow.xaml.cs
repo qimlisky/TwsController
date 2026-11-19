@@ -28,6 +28,7 @@ public partial class FlyoutWindow : Window
     private const double PanelHeight = 540;
     private const double CollapsedMinHeight = 200;
     private const double ExpandedMinHeight = 280;
+    private const double EmptyMinHeight = 220;
     private const double EdgeGap = 8;
     private const double BottomGap = 16;
     private const int SlideMs = 300;
@@ -771,6 +772,7 @@ public partial class FlyoutWindow : Window
             }
             else if (EmptySection.Visibility == Visibility.Visible)
             {
+                EmptySection.InvalidateMeasure();
                 EmptySection.Measure(new Size(contentWidth, double.PositiveInfinity));
                 body = EmptySection.DesiredSize.Height;
             }
@@ -789,7 +791,11 @@ public partial class FlyoutWindow : Window
             var title = TitleBar.DesiredSize.Height;
             // root margin 16 + border 2 + padding 22 + 标题栏底边距 8 + 固件上边距 6
             var height = 16 + 2 + 10 + title + 8 + body + firmware + 12;
-            var min = collapsed ? CollapsedMinHeight : ExpandedMinHeight;
+            var min = collapsed
+                ? CollapsedMinHeight
+                : EmptySection.Visibility == Visibility.Visible
+                    ? EmptyMinHeight
+                    : ExpandedMinHeight;
             var max = Math.Max(min, WorkArea().Height - 24);
             return Math.Clamp(height, min, max);
         }
