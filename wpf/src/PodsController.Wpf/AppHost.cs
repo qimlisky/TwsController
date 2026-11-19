@@ -204,6 +204,8 @@ public sealed class AppHost
         }
 
         After(900, BootstrapFallback);
+        // 启动后如果一直驻留托盘，做一次空闲工作集回收；用户已经打开面板则不回收。
+        MemoryTrim.Schedule(() => !_flyout.IsVisible, 12000);
     }
 
     private void BootstrapFallback()
