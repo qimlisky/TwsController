@@ -98,6 +98,10 @@ public partial class FlyoutWindow : Window
         };
         Closing += OnClosingHandler;
         PreviewMouseDown += (_, _) => ResetAutoHide();
+        SizeChanged += (_, _) =>
+        {
+            if (!_animating) AnchorToBottom();
+        };
 
         Refresh();
     }
@@ -130,8 +134,9 @@ public partial class FlyoutWindow : Window
 
         if (IsVisible)
         {
+            _animating = true;
             var anchor = WorkArea().Bottom - Height - EdgeGap;
-            AnimateTop(Top, anchor, SlideMs, AnchorToBottom);
+            AnimateTop(Top, anchor, SlideMs, FinishShowAnimation);
             BeginAnimation(OpacityProperty, new DoubleAnimation(Opacity, 1, TimeSpan.FromMilliseconds(SlideMs))
             {
                 EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
@@ -151,12 +156,13 @@ public partial class FlyoutWindow : Window
         Opacity = 0;
 
         _windowShownOnce = true;
+        _animating = true;
         Show();
         Activate();
         Topmost = true;
 
         var targetTop = work.Bottom - Height - EdgeGap;
-        AnimateTop(Top, targetTop, SlideMs, AnchorToBottom);
+        AnimateTop(Top, targetTop, SlideMs, FinishShowAnimation);
         BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(SlideMs))
         {
             EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
@@ -266,6 +272,13 @@ public partial class FlyoutWindow : Window
         {
             // 定位失败时保留当前位置
         }
+    }
+
+    private void FinishShowAnimation()
+    {
+        _animating = false;
+        AnchorToBottom();
+        ScheduleAdaptiveHeight();
     }
 
     private void AnimateTop(double from, double to, int ms, Action? completed = null)
@@ -688,6 +701,11 @@ public partial class FlyoutWindow : Window
             {
                 BodyStack.Measure(new Size(contentWidth, double.PositiveInfinity));
                 body = BodyStack.DesiredSize.Height;
+                // ScrollViewer 的实际内容高度比 DesiredSize 更可靠，避免底部功能被少算。
+                if (ContentScroll.ExtentHeight > 0)
+                    body = Math.Max(body, ContentScroll.ExtentHeight);
+                if (BodyStack.ActualHeight > 0)
+                    body = Math.Max(body, BodyStack.ActualHeight);
             }
             else if (EmptySection.Visibility == Visibility.Visible)
             {
