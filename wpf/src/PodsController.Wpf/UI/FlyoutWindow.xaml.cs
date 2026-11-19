@@ -48,6 +48,8 @@ public partial class FlyoutWindow : Window
     private bool _pinned;
     private bool _collapsed;
     private bool _adaptivePending;
+    private bool _pendingGrowUp;
+    private bool _uiConnected;
     private DateTime _trayClickDownAt = DateTime.MinValue;
     private DateTime _lastHiddenAt = DateTime.MinValue;
     private bool _autoShown;
@@ -619,6 +621,8 @@ public partial class FlyoutWindow : Window
             var state = _hub.State;
             var info = _hub.Info;
             var connected = state?.Connected == true;
+            if (connected && !_uiConnected) _pendingGrowUp = true;
+            _uiConnected = connected;
             var features = state?.Features ?? FeatureSet.Empty;
             var deviceStatus = state?.Status ?? "";
             var waitingForConnection = info is not null && !connected;
@@ -790,7 +794,9 @@ public partial class FlyoutWindow : Window
         {
             _adaptivePending = false;
             if (_animating) return;
-            ResizeToContent(animate: false);
+            var animate = _pendingGrowUp;
+            _pendingGrowUp = false;
+            ResizeToContent(animate: animate);
         }), DispatcherPriority.Background);
     }
 

@@ -32,6 +32,7 @@ public sealed class AppHost
     private Dispatcher? _ui;
     private bool _ccRunning;
     private bool _shuttingDown;
+    private bool _autoShowPending;
     private DateTime _lastResume = DateTime.MinValue;
     private List<DeviceInfo> _lastSnapshot = new();
 
@@ -239,9 +240,9 @@ public sealed class AppHost
         }
 
         AppLog.Runtime($"[auto] 自动接管：{info.Name}（{VendorNames.Label(info.Vendor)}）");
+        // 先连上再弹窗：避免第一帧显示“未连接/已断开”的小窗，连上后直接展开成完整窗口。
+        _autoShowPending = _auto.AutoShow;
         _hub.ConnectDevice(info);
-
-        if (_auto.AutoShow) _flyout.ShowFlyout("auto");
     }
 
     /// <summary>托盘 / 齿轮菜单「选择设备」：列出已配对且受支持的耳机。</summary>
@@ -289,6 +290,12 @@ public sealed class AppHost
         }
         _flyout.SetDetectHint("");
         UpdateTrayTip();
+
+        if (connected && _autoShowPending)
+        {
+            _autoShowPending = false;
+            _flyout.ShowFlyout("auto");
+        }
     }
 
     // ------------------------------------------------------------------ //
