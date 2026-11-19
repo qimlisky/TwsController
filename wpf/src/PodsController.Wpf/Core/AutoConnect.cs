@@ -24,7 +24,7 @@ public sealed class AutoConnectManager
     {
         _hub = hub;
         _settings = settings;
-        _autoShow = settings.GetBool("auto_show", true);
+        _autoShow = settings.GetBool("auto_show", false);
         _enabled = settings.GetBool("auto_detect", true);
     }
 

@@ -318,6 +318,9 @@ internal static class Native
     [DllImport("user32.dll")]
     public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern uint RegisterWindowMessage(string lpString);
+
     [DllImport("user32.dll")]
     public static extern void PostQuitMessage(int exitCode);
 

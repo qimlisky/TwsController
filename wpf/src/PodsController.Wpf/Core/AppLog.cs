@@ -31,6 +31,12 @@ public static class AppLog
     /// <summary>控制中心检测日志开关（对应浮窗里的 ccwatch_log）。</summary>
     public static bool ControlCenterLogEnabled { get; set; } = true;
 
+    static AppLog()
+    {
+        // 进程无论从哪条路径退出，都把队列里剩下的日志落盘。
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => Flush();
+    }
+
     public static void Runtime(string message) => Enqueue(AppPaths.RuntimeLog, "RUN", message);
 
     public static void Crash(string message)

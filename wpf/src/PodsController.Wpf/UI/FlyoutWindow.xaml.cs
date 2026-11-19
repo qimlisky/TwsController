@@ -270,6 +270,26 @@ public partial class FlyoutWindow : Window
     /// <summary>真正退出程序时调用：放行关闭，避免 Closing 把退出拦住。</summary>
     public void AllowClose() => _allowClose = true;
 
+    /// <summary>退出前立即停掉所有 UI 定时器 / 动画，不再走 300ms 淡出。</summary>
+    public void PrepareShutdown()
+    {
+        _allowClose = true;
+        try { _outsideTimer?.Stop(); } catch { /* 忽略 */ }
+        try { _autoHideTimer?.Stop(); } catch { /* 忽略 */ }
+        try { _toastTimer?.Stop(); } catch { /* 忽略 */ }
+        try
+        {
+            BeginAnimation(TopProperty, null);
+            BeginAnimation(OpacityProperty, null);
+            BeginAnimation(HeightProperty, null);
+        }
+        catch
+        {
+            // 忽略
+        }
+        try { Hide(); } catch { /* 忽略 */ }
+    }
+
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ClickCount != 1) return;
@@ -816,7 +836,7 @@ public partial class FlyoutWindow : Window
         {
             Header = "识别到耳机后自动弹出面板",
             IsCheckable = true,
-            IsChecked = _settings.GetBool("auto_show", true),
+            IsChecked = _settings.GetBool("auto_show", false),
             StaysOpenOnClick = true
         };
         _miAutoShow.Click += (_, _) =>
@@ -927,7 +947,7 @@ public partial class FlyoutWindow : Window
     private void SyncMenuChecks()
     {
         if (_miAutoDetect is not null) _miAutoDetect.IsChecked = _settings.GetBool("auto_detect", true);
-        if (_miAutoShow is not null) _miAutoShow.IsChecked = _settings.GetBool("auto_show", true);
+        if (_miAutoShow is not null) _miAutoShow.IsChecked = _settings.GetBool("auto_show", false);
         if (_miAutoHide is not null) _miAutoHide.IsChecked = _settings.GetBool("auto_hide", true);
         if (_miDark is not null) _miDark.IsChecked = _settings.GetBool("dark", true);
         if (_miFollowCC is not null) _miFollowCC.IsChecked = _settings.GetBool("follow_control_center", false);

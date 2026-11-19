@@ -1,4 +1,5 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -59,6 +60,8 @@ public sealed class TrayIcon : IDisposable
 
     public Func<TrayMenuState>? StateProvider { get; set; }
 
+    public bool IsAdded => _added;
+
     public event Action? ShowRequested;
     public event Action<bool>? AutoDetectToggled;
     public event Action<Vendor>? DemoRequested;
@@ -78,6 +81,11 @@ public sealed class TrayIcon : IDisposable
         if (_iconFile.Length == 0) _iconFile = AppPaths.IconPath;
         var previous = _icon;
         _icon = LoadIcon(_iconFile);
+        if (_icon == IntPtr.Zero && !string.Equals(_iconFile, AppPaths.IconPath, StringComparison.OrdinalIgnoreCase))
+        {
+            _iconFile = AppPaths.IconPath;
+            _icon = LoadIcon(_iconFile);
+        }
         if (previous != IntPtr.Zero && previous != _icon)
         {
             try { Native.DestroyIcon(previous); } catch { /* 忽略 */ }
@@ -87,7 +95,7 @@ public sealed class TrayIcon : IDisposable
         _added = Native.Shell_NotifyIcon(Native.NIM_ADD, ref data);
         if (!_added)
         {
-            AppLog.Runtime("托盘图标添加失败（可能被系统隐藏）");
+            AppLog.Runtime($"托盘图标添加失败（可能被系统隐藏）code={Marshal.GetLastWin32Error()}");
         }
         return _added;
     }
@@ -258,15 +266,27 @@ public sealed class TrayIcon : IDisposable
     /// </summary>
     public void SetTheme(bool dark)
     {
-        var file = Path.Combine(AppPaths.AssetsDir, dark ? "app_dark.ico" : "app_light.ico");
-        if (!File.Exists(file)) file = AppPaths.IconPath;
-        if (string.Equals(_iconFile, file, StringComparison.OrdinalIgnoreCase)) return;
+        var themed = Path.Combine(AppPaths.AssetsDir, dark ? "app_dark.ico" : "app_light.ico");
+        // 早期生成的主题图标只有 32×32、700 多字节，任务栏里几乎看不见；
+        // 小于 4KB 时直接用 app.ico，保证托盘图标清晰可见。
+        var file = (File.Exists(themed) && new FileInfo(themed).Length >= 4096)
+            ? themed
+            : AppPaths.IconPath;
+        if (string.Equals(_iconFile, file, StringComparison.OrdinalIgnoreCase) && _icon != IntPtr.Zero) return;
+
+        var loaded = LoadIcon(file);
+        if (loaded == IntPtr.Zero && !string.Equals(file, AppPaths.IconPath, StringComparison.OrdinalIgnoreCase))
+        {
+            file = AppPaths.IconPath;
+            loaded = LoadIcon(file);
+        }
+        if (loaded == IntPtr.Zero) return;
 
         _iconFile = file;
         var previous = _icon;
-        _icon = LoadIcon(file);
+        _icon = loaded;
 
-        if (_added && _icon != IntPtr.Zero)
+        if (_added)
         {
             var data = BuildData();
             data.uFlags = Native.NIF_ICON;

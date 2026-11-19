@@ -15,6 +15,7 @@ public sealed class MessageWindow : IDisposable
 {
     private const string ClassName = "VivoPodsWinUI.HiddenWindow";
     private const int TrayIconId = 1;
+    private static readonly uint TaskbarCreatedMessage = Native.RegisterWindowMessage("TaskbarCreated");
 
     private Thread? _thread;
     private Native.WndProcDelegate? _wndProc; // 必须用字段持有，否则会被 GC 回收
@@ -27,6 +28,7 @@ public sealed class MessageWindow : IDisposable
 
     public event Action? TrayLeftClick;
     public event Action? TrayRightClick;
+    public event Action? TaskbarCreated;
     public event Action<int>? HotkeyPressed;
     public event Action<int>? SessionChanged;
     public event Action? PowerResumed;
@@ -95,6 +97,12 @@ public sealed class MessageWindow : IDisposable
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
+        if (msg == TaskbarCreatedMessage)
+        {
+            TaskbarCreated?.Invoke();
+            return IntPtr.Zero;
+        }
+
         switch (msg)
         {
             case Native.WM_TRAYICON:

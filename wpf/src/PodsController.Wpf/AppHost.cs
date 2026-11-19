@@ -60,6 +60,7 @@ public sealed class AppHost
 
         AppLog.Runtime($"启动 pid={Environment.ProcessId} version={AppMeta.AppVersion} " +
                        $"argv={string.Join(" ", _argv)}");
+        AppLog.Flush();   // 启动日志立即落盘，后续崩溃 / 退出也有据可查
 
         _settings = new SettingsStore();
         AppLog.ControlCenterLogEnabled = _settings.GetBool("ccwatch_log", true);
@@ -83,6 +84,9 @@ public sealed class AppHost
         _tray = new TrayIcon(_messageWindow) { StateProvider = BuildTrayState };
         _tray.Add();
         _tray.SetTheme(ThemeManager.IsDark);
+        // Explorer 登录初期可能还没准备好，NIM_ADD 会失败；补两次重挂，确保图标驻留托盘。
+        After(2000, EnsureTray);
+        After(8000, EnsureTray);
 
         // ---- 全局热键 ----
         _hotkeys = new HotkeyManager { FollowWinA = _settings.GetBool("follow_win_a", true) };
@@ -109,10 +113,15 @@ public sealed class AppHost
         {
             if (id == 1) OnUi(() => _flyout.ToggleFlyout());
         };
+        _messageWindow.TaskbarCreated += () => OnUi(() =>
+        {
+            AppLog.Taskbar("Explorer 重建任务栏，重挂托盘图标");
+            _tray?.Remount();
+        });
 
         // ---- 自动识别 ----
         var demoRequested = _argv.Any(a => a.StartsWith("--demo", StringComparison.OrdinalIgnoreCase));
-        _auto = new AutoConnectManager(_hub, _settings) { AutoShow = _settings.GetBool("auto_show", true) };
+        _auto = new AutoConnectManager(_hub, _settings) { AutoShow = _settings.GetBool("auto_show", false) };
         _auto.Hint += hint => OnUi(() => _flyout.SetDetectHint(hint));
         _auto.SnapshotChanged += devices => OnUi(() => OnAutoSnapshot(devices));
         _auto.AutoConnected += info => OnUi(() => OnAutoConnected(info));
@@ -193,7 +202,8 @@ public sealed class AppHost
         }
         else
         {
-            _flyout.ShowFlyout("first-run");
+            // 默认驻留托盘：首次启动不弹面板，用户点托盘图标或 Ctrl+Alt+V 再打开。
+            AppLog.Runtime("没有上次设备，驻留托盘等待选择");
         }
     }
 
@@ -386,6 +396,22 @@ public sealed class AppHost
         DeviceName = _hub?.Info?.Name ?? ""
     };
 
+    /// <summary>托盘图标没加成功时重挂一次（Explorer 未就绪 / 被系统刷新）。</summary>
+    private void EnsureTray()
+    {
+        try
+        {
+            if (_tray is null || _tray.IsAdded) return;
+            _tray.Remount();
+            if (_tray.IsAdded) AppLog.Taskbar("托盘图标重挂成功");
+            else AppLog.Taskbar("托盘图标仍不可用");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Runtime($"托盘重挂失败：{ex.Message}");
+        }
+    }
+
     private void UpdateTrayTip()
     {
         try
@@ -407,6 +433,13 @@ public sealed class AppHost
     // ------------------------------------------------------------------ //
     public void Shutdown()
     {
+        // 退出必须回到 UI 线程执行，避免托盘 / 消息窗口线程直接 Shutdown 造成半退出状态。
+        if (_ui is not null && !_ui.CheckAccess())
+        {
+            _ui.BeginInvoke(new Action(Shutdown));
+            return;
+        }
+
         if (_shuttingDown) return;
         _shuttingDown = true;
 
@@ -415,7 +448,6 @@ public sealed class AppHost
         try
         {
             _settings.Flush();
-            AppLog.Flush();
             AppPaths.EnsureLocalDir();
             File.WriteAllText(AppPaths.CleanExitFlag, DateTime.Now.ToString("O"));
         }
@@ -424,19 +456,28 @@ public sealed class AppHost
             // 忽略
         }
 
+        try { _heartbeat?.Stop(); } catch { /* 忽略 */ }
         try { _auto?.Stop(); } catch { /* 忽略 */ }
         try { _ccWatch?.Stop(); } catch { /* 忽略 */ }
         try { _hotkeys?.Uninstall(); } catch { /* 忽略 */ }
         try { _hub?.Disconnect(); } catch { /* 忽略 */ }
         try { _tray?.Dispose(); } catch { /* 忽略 */ }
-        try { _heartbeat?.Stop(); } catch { /* 忽略 */ }
-        try { _flyout?.AllowClose(); } catch { /* 忽略 */ }
-        try { _flyout?.HideFlyout("shutdown"); } catch { /* 忽略 */ }
+        try { _flyout?.PrepareShutdown(); } catch { /* 忽略 */ }
         try { _messageWindow?.Stop(); } catch { /* 忽略 */ }
         try { SingleInstance.Release(); } catch { /* 忽略 */ }
 
+        AppLog.Flush();
+
         var app = Application.Current;
         if (app is not null && !app.Dispatcher.HasShutdownStarted) app.Shutdown();
+
+        // 兜底：窗口 / 动画 / 第三方线程偶发拖住 Dispatcher 时，1.5 秒后强制结束进程。
+        // 此时配置、日志、托盘图标都已清理完，不会丢数据。
+        Task.Run(async () =>
+        {
+            await Task.Delay(1500).ConfigureAwait(false);
+            Environment.Exit(0);
+        });
     }
 
     // ------------------------------------------------------------------ //
