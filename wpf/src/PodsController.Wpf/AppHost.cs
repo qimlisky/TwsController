@@ -433,9 +433,14 @@ public sealed class AppHost
         try
         {
             var state = _hub?.State;
-            var text = state is null || !state.Connected
+            var info = _hub?.Info;
+            var name = info is null
                 ? AppMeta.AppName
-                : $"{AppMeta.AppName}\n左 {Percent(state.LeftPercent)} · 右 {Percent(state.RightPercent)} · 盒 {Percent(state.CasePercent)}";
+                : DeviceCatalog.DisplayName(info.Name, info.Vendor) + (info.IsDemo ? "（演示）" : "");
+
+            var text = state is null || !state.Connected
+                ? name
+                : $"{name}\n左 {Percent(state.LeftPercent)} · 右 {Percent(state.RightPercent)} · 盒 {Percent(state.CasePercent)}";
             _tray?.SetTooltip(text);
         }
         catch
