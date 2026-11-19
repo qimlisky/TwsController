@@ -68,6 +68,7 @@ public partial class FlyoutWindow : Window
 
     private ContextMenu? _settingsMenu;
     private MenuItem? _miAutoDetect;
+    private MenuItem? _miAutoConnectLast;
     private MenuItem? _miAutoShow;
     private MenuItem? _miAutoHide;
     private MenuItem? _miDark;
@@ -1047,6 +1048,18 @@ public partial class FlyoutWindow : Window
         AddMenuItem(demo, "OPPO Enco X4（演示）", () => DemoRequested?.Invoke(Vendor.Oppo));
         AddMenuItem(demo, "Redmi Buds 8 Pro（演示）", () => DemoRequested?.Invoke(Vendor.Redmi));
 
+        _miAutoConnectLast = new MenuItem
+        {
+            Header = "启动时自动连接上次设备",
+            IsCheckable = true,
+            IsChecked = _settings.GetBool("auto_connect_last", false),
+            StaysOpenOnClick = true
+        };
+        _miAutoConnectLast.Click += (_, _) =>
+        {
+            _settings.Set("auto_connect_last", _miAutoConnectLast.IsChecked);
+        };
+
         _miAutoDetect = new MenuItem
         {
             Header = "自动识别并连接耳机",
@@ -1141,6 +1154,7 @@ public partial class FlyoutWindow : Window
         menu.Items.Add(linkInfo);
         menu.Items.Add(demo);
         menu.Items.Add(new Separator());
+        menu.Items.Add(_miAutoConnectLast);
         menu.Items.Add(_miAutoDetect);
         menu.Items.Add(_miAutoShow);
         menu.Items.Add(new Separator());
@@ -1174,6 +1188,7 @@ public partial class FlyoutWindow : Window
 
     private void SyncMenuChecks()
     {
+        if (_miAutoConnectLast is not null) _miAutoConnectLast.IsChecked = _settings.GetBool("auto_connect_last", false);
         if (_miAutoDetect is not null) _miAutoDetect.IsChecked = _settings.GetBool("auto_detect", true);
         if (_miAutoShow is not null) _miAutoShow.IsChecked = _settings.GetBool("auto_show", false);
         if (_miAutoHide is not null) _miAutoHide.IsChecked = _settings.GetBool("auto_hide", true);

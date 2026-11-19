@@ -209,6 +209,11 @@ public sealed class AppHost
     private void BootstrapFallback()
     {
         if (_hub.Info is not null) return;
+        if (!_settings.GetBool("auto_connect_last", false))
+        {
+            AppLog.Runtime("启动自动连接上次设备：未开启，驻留托盘等待选择");
+            return;
+        }
 
         var mac = _settings.Get("last_device_mac");
         var name = _settings.Get("last_device_name");
