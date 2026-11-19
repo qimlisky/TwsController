@@ -258,6 +258,12 @@ public partial class FlyoutWindow : Window
     public void ApplyThemeState(bool dark)
     {
         if (_miDark is not null) _miDark.IsChecked = dark;
+        if (ThemeIcon is not null)
+        {
+            // 深色时显示太阳（切到浅色），浅色时显示月亮（切到深色）。
+            ThemeIcon.Text = dark ? "\uE706" : "\uE708";
+            ThemeButton.ToolTip = dark ? "切换到浅色" : "切换到深色";
+        }
         try { AboutIcon.Source = LoadImage(dark ? "app_icon.png" : "app_icon_light.png"); }
         catch { /* 忽略 */ }
     }
@@ -363,6 +369,9 @@ public partial class FlyoutWindow : Window
     }
 
     private void FoldButton_Click(object sender, RoutedEventArgs e) => SetCollapsed(!_collapsed);
+
+    private void ThemeButton_Click(object sender, RoutedEventArgs e)
+        => DarkThemeToggled?.Invoke(!_settings.GetBool("dark", true));
 
     private void SetCollapsed(bool collapsed)
     {

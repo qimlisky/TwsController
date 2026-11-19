@@ -39,6 +39,7 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0" Width="28" Height="28" CornerRadius="8"
@@ -58,19 +59,25 @@
                                    FontSize="14" Foreground="{DynamicResource TextBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
-                    <Button x:Name="PinButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}"
+                    <Button x:Name="ThemeButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}"
+                            Margin="0,0,2,0" Click="ThemeButton_Click" ToolTip="切换深浅色">
+                        <TextBlock x:Name="ThemeIcon" Text="&#xE706;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                   FontSize="14" Foreground="{DynamicResource TextBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
+                    <Button x:Name="PinButton" Grid.Column="4" Style="{StaticResource IconButtonStyle}"
                             Margin="0,0,2,0" Click="PinButton_Click" ToolTip="固定浮窗">
                         <TextBlock x:Name="PinIcon" Text="&#xE840;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                    FontSize="14" Foreground="{DynamicResource TextBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
-                    <Button x:Name="SettingsButton" Grid.Column="4" Style="{StaticResource IconButtonStyle}"
+                    <Button x:Name="SettingsButton" Grid.Column="5" Style="{StaticResource IconButtonStyle}"
                             Margin="0,0,2,0" Click="SettingsButton_Click" ToolTip="设置">
                         <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                    FontSize="14" Foreground="{DynamicResource TextBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
-                    <Button x:Name="CloseButton" Grid.Column="5" Style="{StaticResource IconButtonStyle}"
+                    <Button x:Name="CloseButton" Grid.Column="6" Style="{StaticResource IconButtonStyle}"
                             Click="CloseButton_Click" ToolTip="关闭">
                         <TextBlock Text="&#xE8BB;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                    FontSize="13" Foreground="{DynamicResource TextBrush}"
