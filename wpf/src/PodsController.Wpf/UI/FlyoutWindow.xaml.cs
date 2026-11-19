@@ -381,6 +381,8 @@ public partial class FlyoutWindow : Window
         NoiseSection.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
         // 折叠态只保留电量 / 紧凑降噪；其余分区由 Refresh 按连接状态和能力位控制。
         CompactNoiseSeg.Visibility = collapsed && CompactNoiseAvailable() ? Visibility.Visible : Visibility.Collapsed;
+        // 折叠态它是最后一块，去掉尾部 8px 间距，避免底部多出一条空白。
+        CompactNoiseSeg.Margin = collapsed ? new Thickness(0) : new Thickness(0, 0, 0, 8);
 
         ApplyPillMetrics(collapsed);
 
@@ -793,7 +795,8 @@ public partial class FlyoutWindow : Window
 
             var title = TitleBar.DesiredSize.Height;
             // root margin 16 + border 2 + padding 22 + 标题栏底边距 8 + 固件上边距 6
-            var height = 16 + 2 + 10 + title + 8 + body + firmware + 12;
+            // 折叠态底部不留内边距，只保留圆角外框的安全边距。
+            var height = 16 + 2 + 10 + title + 8 + body + firmware + (collapsed ? 2 : 12);
             var min = EmptySection.Visibility == Visibility.Visible
                 ? EmptyMinHeight
                 : collapsed
