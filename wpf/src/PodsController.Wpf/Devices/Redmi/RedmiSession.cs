@@ -217,12 +217,9 @@ public sealed class RedmiSession : EarbudSession
         }
         finally
         {
-            if (!_stop)
-            {
-                _stop = true;
-                SetConnected(false);
-                SetStatus("已断开");
-            }
+            _stop = true;
+            SetConnected(false);
+            SetStatus("已断开");
         }
     }
 
