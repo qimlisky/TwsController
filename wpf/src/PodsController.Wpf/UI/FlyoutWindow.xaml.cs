@@ -651,7 +651,7 @@ public partial class FlyoutWindow : Window
 
             EmptySection.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
             ContentScroll.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
-            FoldButton.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
+            FoldButton.Visibility = Visibility.Visible;
 
             // 自动弹出的窗口，等真正连上后再重新给满 5 秒，避免连接成功瞬间就收起。
             if (connected && _autoShown && !_pinned && !_autoHideArmed)
@@ -749,7 +749,15 @@ public partial class FlyoutWindow : Window
             TitleBar.Measure(new Size(contentWidth, double.PositiveInfinity));
 
             double body;
-            if (collapsed)
+            if (EmptySection.Visibility == Visibility.Visible)
+            {
+                // 未连接/连接失败时，空态不参与折叠后的电量紧凑布局；
+                // 折叠与展开都保持同一张空态卡片和同一高度。
+                EmptySection.InvalidateMeasure();
+                EmptySection.Measure(new Size(contentWidth, double.PositiveInfinity));
+                body = EmptySection.DesiredSize.Height;
+            }
+            else if (collapsed)
             {
                 // 折叠态只保留电量卡片和紧凑降噪；不要再用展开态的 BodyStack / ExtentHeight，
                 // 否则会把之前 540 高的视口当成内容高度，底部留出一大块空白。
@@ -771,12 +779,6 @@ public partial class FlyoutWindow : Window
                 if (ContentScroll.ScrollableHeight > 0)
                     body = Math.Max(body, ContentScroll.ExtentHeight);
             }
-            else if (EmptySection.Visibility == Visibility.Visible)
-            {
-                EmptySection.InvalidateMeasure();
-                EmptySection.Measure(new Size(contentWidth, double.PositiveInfinity));
-                body = EmptySection.DesiredSize.Height;
-            }
             else
             {
                 body = 0;
@@ -792,10 +794,10 @@ public partial class FlyoutWindow : Window
             var title = TitleBar.DesiredSize.Height;
             // root margin 16 + border 2 + padding 22 + 标题栏底边距 8 + 固件上边距 6
             var height = 16 + 2 + 10 + title + 8 + body + firmware + 12;
-            var min = collapsed
-                ? CollapsedMinHeight
-                : EmptySection.Visibility == Visibility.Visible
-                    ? EmptyMinHeight
+            var min = EmptySection.Visibility == Visibility.Visible
+                ? EmptyMinHeight
+                : collapsed
+                    ? CollapsedMinHeight
                     : ExpandedMinHeight;
             var max = Math.Max(min, WorkArea().Height - 24);
             return Math.Clamp(height, min, max);
