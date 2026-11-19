@@ -28,6 +28,7 @@ public sealed class HotkeyManager : IDisposable
     public string? LastError { get; private set; }
 
     public event Action? WinAPressed;
+    public event Action? TogglePressed;
 
     /// <summary>在消息窗口上注册 Ctrl+Alt+V。</summary>
     public bool Install(IntPtr window)
@@ -112,11 +113,22 @@ public sealed class HotkeyManager : IDisposable
     {
         try
         {
-            if (nCode >= 0 && FollowWinA &&
+            if (nCode >= 0 &&
                 (wParam == (IntPtr)Native.WM_KEYDOWN || wParam == (IntPtr)Native.WM_SYSKEYDOWN))
             {
                 var info = System.Runtime.InteropServices.Marshal.PtrToStructure<Native.KbdLlHookStruct>(lParam);
-                if (info.VkCode == Native.VK_A &&
+
+                // RegisterHotKey 被别的程序占用时，用低级键盘钩子兜底 Ctrl+Alt+V。
+                if (!_registered && info.VkCode == Native.VK_V &&
+                    (Native.GetAsyncKeyState(Native.VK_CONTROL) & 0x8000) != 0 &&
+                    (Native.GetAsyncKeyState(Native.VK_MENU) & 0x8000) != 0)
+                {
+                    TogglePressed?.Invoke();
+                    return (IntPtr)1;
+                }
+
+                if (FollowWinA &&
+                    info.VkCode == Native.VK_A &&
                     ((Native.GetAsyncKeyState(Native.VK_LWIN) & 0x8000) != 0 ||
                      (Native.GetAsyncKeyState(Native.VK_RWIN) & 0x8000) != 0))
                 {

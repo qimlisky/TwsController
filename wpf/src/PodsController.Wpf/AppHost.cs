@@ -109,6 +109,8 @@ public sealed class AppHost
         {
             if (_hotkeys.FollowWinA) OnUi(() => _flyout.ShowAfterWinA());
         };
+        // RegisterHotKey 被占用时，钩子兜底的 Ctrl+Alt+V。
+        _hotkeys.TogglePressed += () => OnUi(() => _flyout.ToggleFlyout());
 
         // ---- 控制中心跟随 ----
         _ccWatch = new ControlCenterWatcher { LogEnabled = _settings.GetBool("ccwatch_log", true) };

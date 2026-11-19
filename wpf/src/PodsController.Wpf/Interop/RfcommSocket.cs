@@ -98,21 +98,40 @@ public sealed class RfcommSocket : IDisposable
     public void Send(byte[] data)
     {
         if (!Connected) throw new InvalidOperationException("通道未连接");
-        var sent = Native.send(_socket, data, data.Length, 0);
-        if (sent <= 0)
+        var sentTotal = 0;
+        while (sentTotal < data.Length)
         {
-            throw new IOException($"发送失败（WSA 错误 {Native.WSAGetLastError()}）");
+            var chunk = sentTotal == 0 ? data : data[sentTotal..];
+            var sent = Native.send(_socket, chunk, chunk.Length, 0);
+            if (sent <= 0)
+            {
+                var err = Native.WSAGetLastError();
+                Close();
+                throw new IOException($"发送失败（WSA 错误 {err}）");
+            }
+            sentTotal += sent;
         }
     }
 
-    /// <summary>读一次（带 1s 超时）；超时返回空数组。</summary>
+    /// <summary>读一次（带 1s 超时）；超时返回空数组，连接被对端关闭或出错时主动断开。</summary>
     public byte[] Receive(int bufferSize = 2048)
     {
         if (!Connected) return Array.Empty<byte>();
         var buffer = new byte[bufferSize];
         var read = Native.recv(_socket, buffer, buffer.Length, 0);
-        if (read <= 0) return Array.Empty<byte>();
-        return buffer[..read];
+        if (read > 0) return buffer[..read];
+
+        if (read == 0)
+        {
+            // 对端正常关闭
+            Close();
+            return Array.Empty<byte>();
+        }
+
+        var err = Native.WSAGetLastError();
+        if (err == Native.WSAETIMEDOUT) return Array.Empty<byte>(); // 1s 超时，继续轮询
+        Close();
+        return Array.Empty<byte>();
     }
 
     public void Close()

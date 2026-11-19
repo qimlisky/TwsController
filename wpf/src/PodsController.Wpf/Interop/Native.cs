@@ -62,6 +62,9 @@ internal static class Native
     public const int WM_KEYDOWN = 0x0100;
     public const int WM_SYSKEYDOWN = 0x0104;
     public const int VK_A = 0x41;
+    public const int VK_CONTROL = 0x11;
+    public const int VK_MENU = 0x12;
+    public const int VK_V = 0x56;
 
     public const uint NIM_ADD = 0;
     public const uint NIM_MODIFY = 1;
